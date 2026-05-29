@@ -50,36 +50,38 @@ const pageMeta = {
 
 const aiChatText = {
   en: {
-    kicker: "AI consultant",
-    title: "GoGoRent assistant",
+    kicker: "24/7 AI consultant",
+    title: "GoGoRent booking assistant",
+    subtitle: "Prices, conditions, delivery, and booking details",
     toggle: "Ask GoGoRent",
     close: "Close assistant",
-    placeholder: "Ask about cars, insurance, delivery, or dates",
+    placeholder: "Ask about price, availability, delivery...",
     send: "Send",
     whatsapp: "Send chat to WhatsApp",
-    greeting: "Hi. I can help with GoGoRent cars, prices, insurance, delivery, routes, and rental conditions. What dates or route are you planning?",
+    greeting: "Hi. I can help you choose a car, estimate the price, explain rental conditions, and prepare a booking request. Send your dates and preferred car, or choose a quick option below.",
     loading: "Checking...",
     error: "I cannot answer right now. Please message us on WhatsApp and we will help quickly.",
     transcriptIntro: "Hi GoGoRent, I talked with the AI assistant and want to continue booking.",
     userLabel: "Client",
     assistantLabel: "AI",
-    prompts: ["Cars", "Conditions", "Mountain trip"]
+    prompts: ["Cars", "Conditions", "Price", "Availability"]
   },
   ru: {
-    kicker: "AI консультант",
-    title: "Помощник GoGoRent",
+    kicker: "AI консультант 24/7",
+    title: "Помощник по бронированию",
+    subtitle: "Цены, условия, доставка и детали брони",
     toggle: "Спросить GoGoRent",
     close: "Закрыть помощника",
-    placeholder: "Спросите про авто, страховку, доставку или даты",
+    placeholder: "Спросите про цену, наличие, доставку...",
     send: "Отправить",
     whatsapp: "Отправить чат в WhatsApp",
-    greeting: "Здравствуйте. Я помогу с авто GoGoRent, ценами, страховкой, доставкой, маршрутами и условиями аренды. На какие даты или маршрут планируете машину?",
+    greeting: "Здравствуйте. Я помогу выбрать авто, примерно посчитать цену, объяснить условия и подготовить заявку на бронь. Напишите даты и желаемую машину или выберите быстрый вопрос ниже.",
     loading: "Проверяю...",
     error: "Сейчас не могу ответить. Напишите нам в WhatsApp, и мы быстро поможем.",
     transcriptIntro: "Здравствуйте, GoGoRent. Я пообщался с AI-помощником и хочу продолжить бронирование.",
     userLabel: "Клиент",
     assistantLabel: "AI",
-    prompts: ["Авто", "Условия", "Горы"]
+    prompts: ["Авто", "Условия", "Цена", "Наличие"]
   }
 };
 
@@ -462,6 +464,93 @@ function messageHasAny(text, words) {
   return words.some((word) => text.includes(word));
 }
 
+const rentalRates = [
+  { name: "Ford Fusion Hybrid", rate: 45, keys: ["ford", "fusion"] },
+  { name: "Mazda CX-5", rate: 60, keys: ["cx-5", "cx5"] },
+  { name: "Mazda CX-9", rate: 70, keys: ["cx-9", "cx9"] },
+  { name: "Mazda CX-9 NEW", rate: 75, keys: ["cx-9 new", "cx9 new", "new cx-9", "new cx9", "2021", "captain"] }
+];
+
+const monthIndex = {
+  jan: 0, january: 0, "января": 0, "январь": 0,
+  feb: 1, february: 1, "февраля": 1, "февраль": 1,
+  mar: 2, march: 2, "марта": 2, "март": 2,
+  apr: 3, april: 3, "апреля": 3, "апрель": 3,
+  may: 4, "мая": 4, "май": 4,
+  jun: 5, june: 5, "июня": 5, "июнь": 5,
+  jul: 6, july: 6, "июля": 6, "июль": 6,
+  aug: 7, august: 7, "августа": 7, "август": 7,
+  sep: 8, sept: 8, september: 8, "сентября": 8, "сентябрь": 8,
+  oct: 9, october: 9, "октября": 9, "октябрь": 9,
+  nov: 10, november: 10, "ноября": 10, "ноябрь": 10,
+  dec: 11, december: 11, "декабря": 11, "декабрь": 11
+};
+
+function detectCar(text) {
+  if (text.includes("cx-9 new") || text.includes("cx9 new") || text.includes("new cx-9") || text.includes("new cx9") || text.includes("2021") || text.includes("captain")) {
+    return rentalRates[3];
+  }
+  return rentalRates.find((car) => car.keys.some((key) => text.includes(key)));
+}
+
+function parseDateRange(text) {
+  const year = new Date().getFullYear();
+  const wordPattern = /(\d{1,2})(?:st|nd|rd|th)?\s*(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|января|январь|февраля|февраль|марта|март|апреля|апрель|мая|май|июня|июнь|июля|июль|августа|август|сентября|сентябрь|октября|октябрь|ноября|ноябрь|декабря|декабрь)/gi;
+  const wordDates = [...text.matchAll(wordPattern)].map((match) => ({
+    day: Number(match[1]),
+    month: monthIndex[match[2].toLowerCase()]
+  }));
+
+  let dates = wordDates;
+  if (dates.length < 2) {
+    const numericPattern = /(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?/g;
+    dates = [...text.matchAll(numericPattern)].map((match) => ({
+      day: Number(match[1]),
+      month: Number(match[2]) - 1,
+      year: match[3] ? Number(match[3].length === 2 ? `20${match[3]}` : match[3]) : year
+    }));
+  }
+
+  if (dates.length < 2) return null;
+  const start = new Date(dates[0].year || year, dates[0].month, dates[0].day);
+  const end = new Date(dates[1].year || year, dates[1].month, dates[1].day);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+  const days = Math.max(1, Math.round((end - start) / 86400000));
+  return { days, start, end };
+}
+
+function formatTripDate(date, ru) {
+  return date.toLocaleDateString(ru ? "ru-RU" : "en-GB", {
+    day: "numeric",
+    month: "short"
+  });
+}
+
+function priceEstimateReply(content, ru) {
+  const text = content.toLowerCase();
+  const range = parseDateRange(text);
+  if (!range || !messageHasAny(text, ["price", "cost", "total", "сколько", "цена", "стоим", "стоит"])) return null;
+
+  const car = detectCar(text);
+  const start = formatTripDate(range.start, ru);
+  const end = formatTripDate(range.end, ru);
+  const dayLabel = ru ? `${range.days} дн.` : `${range.days} rental days`;
+
+  if (car) {
+    const total = car.rate * range.days;
+    return ru
+      ? `С ${start} до ${end} получается примерно ${dayLabel}. ${car.name}: $${car.rate}/день, итого примерно $${total}. Наличие нужно подтвердить. Пришлите время получения/возврата, точку доставки и имя.`
+      : `From ${start} to ${end}, it is approximately ${dayLabel}. ${car.name}: $${car.rate}/day, total about $${total}. Availability still needs confirmation. Please send pickup/return time, delivery point, and name.`;
+  }
+
+  const totals = rentalRates
+    .map((item) => `${item.name}: $${item.rate * range.days}`)
+    .join(ru ? "; " : "; ");
+  return ru
+    ? `С ${start} до ${end} получается примерно ${dayLabel}, если время получения и возврата одинаковое. Примерная цена: ${totals}. Какую машину хотите проверить?`
+    : `From ${start} to ${end}, it is approximately ${dayLabel} if pickup and return time are the same. Estimated totals: ${totals}. Which car would you like to check?`;
+}
+
 function localAssistantReply(content) {
   const text = content.toLowerCase();
   const ru = activeLang() === "ru" || /[а-яё]/i.test(content);
@@ -469,10 +558,19 @@ function localAssistantReply(content) {
     ? "Напишите нам в WhatsApp, Telegram или Instagram, и мы быстро подтвердим наличие."
     : "Message us on WhatsApp, Telegram, or Instagram and we will confirm availability quickly.";
 
+  const priceEstimate = priceEstimateReply(content, ru);
+  if (priceEstimate) return priceEstimate;
+
   if (messageHasAny(text, ["jeep", "renegade", "джип", "ренег"])) {
     return ru
       ? "Jeep Renegade сейчас, к сожалению, занят на долгий срок. Ближайшая альтернатива - Mazda CX-5 за $60/день: удобный SUV для города, трассы и поездок по Грузии. На какие даты нужна машина?"
       : "Jeep Renegade is currently occupied for a long-term rental. The closest alternative is Mazda CX-5 for $60/day: a comfortable SUV for city, highway, and Georgia trips. What dates do you need?";
+  }
+
+  if (messageHasAny(text, ["available", "availability", "free", "busy", "налич", "свобод", "занят", "доступ"])) {
+    return ru
+      ? "Я могу подготовить запрос на проверку наличия. Пришлите дату и время получения, дату и время возврата, желаемую машину, точку доставки и имя. После этого GoGoRent быстро подтвердит, свободна ли машина."
+      : "I can prepare an availability request. Please send pickup date and time, return date and time, preferred car, delivery point, and name. GoGoRent will quickly confirm if the car is free.";
   }
 
   if (messageHasAny(text, ["condition", "conditions", "terms", "deposit", "insurance", "услов", "депозит", "страхов"])) {
@@ -543,12 +641,14 @@ function updateChatLanguage() {
   const labels = chatLabels();
   const headerSpan = aiChat.querySelector(".ai-chat-header span");
   const headerStrong = aiChat.querySelector(".ai-chat-header strong");
+  const headerSmall = aiChat.querySelector(".ai-chat-header small");
   const toggleStrong = aiChat.querySelector(".ai-chat-toggle strong");
   const closeButton = aiChat.querySelector("[data-ai-chat-close]");
   const sendButton = aiChat.querySelector(".ai-chat-form button");
 
   if (headerSpan) headerSpan.textContent = labels.kicker;
   if (headerStrong) headerStrong.textContent = labels.title;
+  if (headerSmall) headerSmall.textContent = labels.subtitle;
   if (toggleStrong) toggleStrong.textContent = labels.toggle;
   if (closeButton) closeButton.setAttribute("aria-label", labels.close);
   if (aiChatInput) aiChatInput.placeholder = labels.placeholder;
