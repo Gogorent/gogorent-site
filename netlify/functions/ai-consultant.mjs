@@ -1,5 +1,18 @@
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5-mini";
+const DEFAULT_AVAILABILITY_WORKBOOK_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmqLhmb_ndViMSasfkTTERQV2RA-echR43Tm930wUH7c9kBIHxc--lbqEuTqrnvMy1YhFZ9wvzwPZA/pubhtml";
+const DEFAULT_AVAILABILITY_BASE_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSmqLhmb_ndViMSasfkTTERQV2RA-echR43Tm930wUH7c9kBIHxc--lbqEuTqrnvMy1YhFZ9wvzwPZA/pub";
+const DEFAULT_AVAILABILITY_SHEETS = [
+  { label: "Fleet", gid: "1624573443", type: "fleet" },
+  { label: "May 2026", year: 2026, month: 4, gid: "1881198293" },
+  { label: "June 2026", year: 2026, month: 5, gid: "1898449155" },
+  { label: "July 2026", year: 2026, month: 6, gid: "1738471206" },
+  { label: "August 2026", year: 2026, month: 7, gid: "695738845" },
+  { label: "September 2026", year: 2026, month: 8, gid: "1975982194" },
+  { label: "October 2026", year: 2026, month: 9, gid: "698154120" },
+  { label: "November 2026", year: 2026, month: 10, gid: "81306538" },
+  { label: "December 2026", year: 2026, month: 11, gid: "388535455" }
+];
 
 const systemPrompt = `
 You are the GoGoRent website AI consultant for car rental in Tbilisi, Georgia.
@@ -142,20 +155,54 @@ function normalizeMessages(messages) {
 }
 
 async function availabilityContext(latestMessage = "") {
-  const csvUrl = process.env.AVAILABILITY_CSV_URL;
-  const availabilityMonth = process.env.AVAILABILITY_MONTH;
-  if (!csvUrl) {
+  const sources = await buildAvailabilitySources();
+  if (!sources.length) {
     return "Live availability table is not connected yet. Ask the customer for booking details and say GoGoRent will confirm availability quickly.";
   }
 
   try {
-    const response = await fetch(csvUrl, { headers: { "Accept": "text/csv,text/plain,*/*" } });
-    if (!response.ok) throw new Error(`Availability fetch failed: ${response.status}`);
-    const text = await response.text();
-    const parsed = availabilitySummary(latestMessage, text, availabilityMonth);
+    const safeSources = sources.filter((source) => !isPrivateSheet(source));
+    const { range, selected, reason } = selectAvailabilitySources(safeSources, latestMessage);
+    const shouldLoadAll = shouldUseWholeWorkbook(latestMessage);
+    const fleetSources = safeSources.filter((source) => source.type === "fleet").slice(0, 1);
+    const monthSources = safeSources.filter((source) => source.month !== null);
+    const sourcesToLoad = shouldLoadAll
+      ? [...fleetSources, ...monthSources]
+      : [...fleetSources, ...selected];
+
+    if (!range) {
+      const loaded = await loadAvailabilitySources(
+        shouldLoadAll ? sourcesToLoad : [...fleetSources, ...monthSources],
+        shouldLoadAll ? latestMessage : ""
+      );
+      return `
+Live availability is connected to the published Google Sheet workbook.
+Safe workbook tabs available to the assistant: ${safeSources.map((source) => source.label).join(", ")}.
+Private/customer tabs are intentionally ignored and must never be shown to website visitors.
+${loaded.overview ? `\nWorkbook overview:\n${loaded.overview}\n` : ""}
+The customer's message does not contain a clear pickup and return date.
+Ask for pickup date, return date, preferred car, pickup/return time, delivery point, and name before checking availability.
+Connected months: ${monthSources.map((source) => source.label).join(", ")}.
+`.trim();
+    }
+
+    if (!selected.length) {
+      return `
+Live availability is connected, but no published availability sheet matches the customer's requested month.
+Requested period: ${formatTripDate(range.start, false)} to ${formatTripDate(range.end, false)}.
+Connected months: ${monthSources.map((source) => source.label).join(", ")}.
+Do not guess availability. Ask GoGoRent to confirm manually.
+`.trim();
+    }
+
+    const loaded = await loadAvailabilitySources(sourcesToLoad, latestMessage);
+
     return `
-Live availability is connected.
-Availability month: ${availabilityMonth || "not specified; use only if the customer's requested month clearly matches the published sheet."}
+Live availability is connected to the published Google Sheet workbook.
+Safe workbook tabs available to the assistant: ${safeSources.map((source) => source.label).join(", ")}.
+Private/customer tabs are intentionally ignored and must never be shown to website visitors.
+Loaded safe tabs for this answer: ${loaded.sources.map((source) => source.label).join(", ")}.
+Selection reason: ${reason}
 CSV may be a matrix where:
 - First row has day numbers.
 - First column has car names.
@@ -163,11 +210,12 @@ CSV may be a matrix where:
 - ЗАНЯТО means busy.
 - A car is available for a rental period only if every requested day is СВОБОДНО/free.
 - If any requested day is ЗАНЯТО/busy, say it is not available for that period and suggest a close alternative.
-- If the requested month is different from the connected availability month, do not guess. Ask GoGoRent to confirm.
-${parsed ? `\n${parsed}\n` : ""}
+- If the requested period spans two months, check both selected month sheets.
+${loaded.parsedChecks ? `\n${loaded.parsedChecks}\n` : ""}
+${loaded.overview ? `\nWorkbook overview:\n${loaded.overview}\n` : ""}
 
-Live availability CSV excerpt:
-${text.slice(0, 6000)}
+Safe CSV excerpts:
+${loaded.excerpts}
 `.trim();
   } catch {
     return "Live availability table could not be loaded. Ask the customer for booking details and say GoGoRent will confirm availability quickly.";
@@ -287,6 +335,499 @@ function priceEstimateReply(content, ru) {
     : `From ${start} to ${end}, it is approximately ${dayLabel} if pickup and return time are the same. Estimated totals: ${totals}. Which car would you like to check?`;
 }
 
+function cleanUrl(url) {
+  return String(url || "").trim().replace(/^<|>$/g, "");
+}
+
+function monthKey(year, month) {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
+function labelToMonth(label) {
+  const text = String(label || "").toLowerCase();
+  const yearMatch = text.match(/\b(20\d{2})\b/);
+  const numericMatch = text.match(/\b(20\d{2})[-/.](\d{1,2})\b/);
+  if (numericMatch) {
+    return {
+      year: Number(numericMatch[1]),
+      month: Number(numericMatch[2]) - 1
+    };
+  }
+
+  for (const [name, month] of Object.entries(monthIndex)) {
+    if (text.includes(name)) {
+      return {
+        year: yearMatch ? Number(yearMatch[1]) : new Date().getFullYear(),
+        month
+      };
+    }
+  }
+  return {
+    year: yearMatch ? Number(yearMatch[1]) : new Date().getFullYear(),
+    month: null
+  };
+}
+
+function sourceFromLabel(label, url) {
+  const parsed = labelToMonth(label);
+  const cleanLabel = String(label || "Availability").trim();
+  return {
+    label: cleanLabel,
+    url: cleanUrl(url),
+    year: parsed.year,
+    month: parsed.month,
+    type: parsed.month === null ? detectSheetType(cleanLabel) : "availability"
+  };
+}
+
+function detectSheetType(label) {
+  const text = String(label || "").toLowerCase();
+  if (text.includes("автопарк") || text.includes("fleet")) return "fleet";
+  if (text.includes("лист") || text.includes("client") || text.includes("клиент") || text.includes("телефон")) return "private";
+  return "other";
+}
+
+function isPrivateSheet(source) {
+  return source.type === "private";
+}
+
+function shouldUseWholeWorkbook(message) {
+  const text = String(message || "").toLowerCase();
+  return messageHasAny(text, [
+    "all months",
+    "whole file",
+    "entire file",
+    "full file",
+    "весь файл",
+    "все месяцы",
+    "всю таблицу",
+    "весь календарь",
+    "какие свободны",
+    "what is available",
+    "which cars are available"
+  ]);
+}
+
+function parseAvailabilitySources(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+
+  try {
+    const data = JSON.parse(raw);
+    if (Array.isArray(data)) {
+      return data
+        .map((item) => sourceFromLabel(item.label || item.month || item.name, item.url))
+        .filter((source) => source.url);
+    }
+    if (data && typeof data === "object") {
+      return Object.entries(data)
+        .map(([label, url]) => sourceFromLabel(label, url))
+        .filter((source) => source.url);
+    }
+  } catch {
+    // Simple text format is handled below.
+  }
+
+  return raw
+    .split(/\r?\n|;/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separator = line.includes("|") ? "|" : ",";
+      const [label, ...urlParts] = line.split(separator);
+      return sourceFromLabel(label, urlParts.join(separator));
+    })
+    .filter((source) => source.url);
+}
+
+async function sourcesFromPublishedWorkbook(workbookUrl) {
+  const url = cleanUrl(workbookUrl);
+  if (!url) return [];
+  const response = await fetch(url, { headers: { "Accept": "text/html,*/*" } });
+  if (!response.ok) throw new Error(`Workbook fetch failed: ${response.status}`);
+  const html = await response.text();
+  const sources = [];
+  const pattern = /items\.push\(\{name:\s*"([^"]+)"[\s\S]*?gid:\s*"(\d+)"/g;
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    const label = match[1]
+      .replace(/\\x3d/g, "=")
+      .replace(/\\"/g, "\"")
+      .trim();
+    const gid = match[2];
+    const base = url.replace(/\/pubhtml(?:\/sheet.*)?(?:\?.*)?$/, "/pub");
+    sources.push({
+      ...sourceFromLabel(label, `${base}?gid=${gid}&single=true&output=csv`),
+      gid
+    });
+  }
+  return sources;
+}
+
+async function buildAvailabilitySources() {
+  const configured = parseAvailabilitySources(process.env.AVAILABILITY_CSV_URLS);
+  if (configured.length) return configured;
+
+  const workbookUrl = cleanUrl(process.env.AVAILABILITY_WORKBOOK_URL || DEFAULT_AVAILABILITY_WORKBOOK_URL);
+  if (workbookUrl) {
+    try {
+      const workbookSources = await sourcesFromPublishedWorkbook(workbookUrl);
+      if (workbookSources.length) return workbookSources;
+    } catch {
+      // Fall back to the known published sheet ids below.
+    }
+  }
+
+  const base = cleanUrl(process.env.AVAILABILITY_PUBLISHED_CSV_BASE_URL || DEFAULT_AVAILABILITY_BASE_URL);
+  if (base) {
+    return DEFAULT_AVAILABILITY_SHEETS.map((sheet) => ({
+      ...sheet,
+      year: sheet.year ?? labelToMonth(sheet.label).year,
+      month: sheet.month ?? labelToMonth(sheet.label).month,
+      type: sheet.type || "availability",
+      url: `${base}?gid=${sheet.gid}&single=true&output=csv`
+    }));
+  }
+
+  const singleUrl = cleanUrl(process.env.AVAILABILITY_CSV_URL);
+  if (!singleUrl) return [];
+  const label = process.env.AVAILABILITY_MONTH || "Availability";
+  const source = sourceFromLabel(label, singleUrl);
+  return [source];
+}
+
+function requestedMonthKeys(range) {
+  if (!range) return [];
+  const keys = [];
+  const cursor = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+  const lastRentalDay = new Date(range.end);
+  lastRentalDay.setDate(lastRentalDay.getDate() - 1);
+  if (lastRentalDay < range.start) {
+    lastRentalDay.setTime(range.start.getTime());
+  }
+  const last = new Date(lastRentalDay.getFullYear(), lastRentalDay.getMonth(), 1);
+
+  while (cursor <= last) {
+    keys.push(monthKey(cursor.getFullYear(), cursor.getMonth()));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return keys;
+}
+
+function selectAvailabilitySources(sources, latestMessage) {
+  const range = parseDateRange(latestMessage.toLowerCase());
+  if (!range) {
+    return { range: null, selected: [], reason: "No clear date range in the customer message." };
+  }
+
+  const requestedKeys = new Set(requestedMonthKeys(range));
+  const selected = sources.filter((source) => (
+    source.month !== null && requestedKeys.has(monthKey(source.year, source.month))
+  ));
+  return {
+    range,
+    selected,
+    reason: `Requested month keys: ${[...requestedKeys].join(", ")}.`
+  };
+}
+
+async function loadAvailabilitySources(sources, latestMessage) {
+  const uniqueSources = [];
+  const seen = new Set();
+  for (const source of sources) {
+    if (!source.url || seen.has(source.url)) continue;
+    seen.add(source.url);
+    uniqueSources.push(source);
+  }
+
+  const loaded = await Promise.all(uniqueSources.map(async (source) => {
+    const response = await fetch(source.url, { headers: { "Accept": "text/csv,text/plain,*/*" } });
+    if (!response.ok) throw new Error(`Availability fetch failed: ${response.status}`);
+    const text = await response.text();
+    return {
+      ...source,
+      text,
+      parsed: source.month !== null
+        ? availabilitySummary(latestMessage, text, source.label, source.month, source.year)
+        : "",
+      summary: summarizeCsvSource(source, text)
+    };
+  }));
+
+  return {
+    sources: loaded,
+    parsedChecks: loaded.map((source) => source.parsed).filter(Boolean).join("\n\n"),
+    overview: loaded.map((source) => source.summary).filter(Boolean).join("\n"),
+    excerpts: loaded
+      .map((source) => `--- ${source.label} ---\n${source.text.slice(0, source.month === null ? 1800 : 2500)}`)
+      .join("\n\n")
+  };
+}
+
+function summarizeCsvSource(source, csvText) {
+  if (source.type === "fleet") return summarizeFleet(csvText);
+  if (source.month !== null) return summarizeAvailabilityMonth(source, csvText);
+  return "";
+}
+
+function summarizeFleet(csvText) {
+  const lines = csvText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) return "";
+  const cars = lines.slice(1, 12).map((line) => {
+    const cells = splitCsvLine(line);
+    return cells.filter(Boolean).slice(1).join(" / ");
+  }).filter(Boolean);
+  return cars.length ? `Fleet tab: ${cars.join("; ")}.` : "";
+}
+
+function summarizeAvailabilityMonth(source, csvText) {
+  const lines = csvText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) return "";
+  const header = splitCsvLine(lines[0]);
+  const dayColumns = new Map();
+  header.forEach((value, index) => {
+    const day = Number(value);
+    if (Number.isInteger(day) && day > 0 && day <= 31) {
+      dayColumns.set(day, index);
+    }
+  });
+  if (!dayColumns.size) return "";
+
+  const carSummaries = lines.slice(1).map((line) => {
+    const cells = splitCsvLine(line);
+    const car = cells[0];
+    if (!car) return "";
+    const busyDays = [...dayColumns.entries()]
+      .filter(([, index]) => {
+        const status = cells[index] || "";
+        return status && !isFreeStatus(status);
+      })
+      .map(([day]) => day);
+    return busyDays.length
+      ? `${car} busy ${compressDays(busyDays)}`
+      : `${car} all published days free`;
+  }).filter(Boolean);
+
+  return `${source.label}: ${carSummaries.join("; ")}.`;
+}
+
+function compressDays(days) {
+  if (!days.length) return "";
+  const sorted = [...new Set(days)].sort((a, b) => a - b);
+  const ranges = [];
+  let start = sorted[0];
+  let previous = sorted[0];
+  for (const day of sorted.slice(1)) {
+    if (day === previous + 1) {
+      previous = day;
+      continue;
+    }
+    ranges.push(start === previous ? `${start}` : `${start}-${previous}`);
+    start = day;
+    previous = day;
+  }
+  ranges.push(start === previous ? `${start}` : `${start}-${previous}`);
+  return ranges.join(", ");
+}
+
+function isAvailabilityQuestion(text) {
+  return messageHasAny(String(text || "").toLowerCase(), [
+    "available",
+    "availability",
+    "free",
+    "busy",
+    "check cars",
+    "which cars",
+    "налич",
+    "свобод",
+    "занят",
+    "доступ",
+    "какие машины",
+    "какая машина"
+  ]);
+}
+
+function parseAvailabilityMatrix(csvText) {
+  const lines = csvText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 2) return null;
+
+  const header = splitCsvLine(lines[0]);
+  const dayColumns = new Map();
+  header.forEach((value, index) => {
+    const day = Number(value);
+    if (Number.isInteger(day) && day > 0 && day <= 31) {
+      dayColumns.set(day, index);
+    }
+  });
+  if (!dayColumns.size) return null;
+
+  const rows = lines.slice(1).map((line) => {
+    const cells = splitCsvLine(line);
+    return { car: cells[0], cells };
+  }).filter((row) => row.car);
+
+  return { dayColumns, rows };
+}
+
+function displayCarName(name) {
+  const normalized = normalizeCarName(name);
+  if (normalized.includes("fordfusion")) return "Ford Fusion Hybrid";
+  if (normalized.includes("mazdacx9new")) return "Mazda CX-9 NEW";
+  if (normalized.includes("mazdacx5")) return "Mazda CX-5";
+  if (normalized.includes("mazdacx9")) return "Mazda CX-9";
+  return name;
+}
+
+function rateForCarName(name) {
+  const normalized = normalizeCarName(name);
+  if (normalized.includes("fordfusion")) return 45;
+  if (normalized.includes("mazdacx9new")) return 75;
+  if (normalized.includes("mazdacx5")) return 60;
+  if (normalized.includes("mazdacx9")) return 70;
+  return null;
+}
+
+function findRowByCarName(rows, carName) {
+  const target = normalizeCarName(carName);
+  return rows.find((row) => {
+    const name = normalizeCarName(row.car);
+    return name === target || name.includes(target) || target.includes(name);
+  }) || null;
+}
+
+function rentalDaysInRange(range) {
+  const days = [];
+  const cursor = new Date(range.start);
+  while (cursor < range.end) {
+    days.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  if (!days.length) days.push(new Date(range.start));
+  return days;
+}
+
+function statusForDay(loadedSources, carName, day) {
+  const source = loadedSources.find((item) => (
+    item.month === day.getMonth() && item.year === day.getFullYear()
+  ));
+  if (!source) return { status: "unknown", free: false };
+
+  const matrix = parseAvailabilityMatrix(source.text);
+  if (!matrix) return { status: "unknown", free: false };
+
+  const row = findRowByCarName(matrix.rows, carName);
+  const column = matrix.dayColumns.get(day.getDate());
+  if (!row || column === undefined) return { status: "unknown", free: false };
+
+  const status = row.cells[column] || "unknown";
+  return { status, free: isFreeStatus(status) };
+}
+
+function collectCarsFromLoadedSources(loadedSources) {
+  const cars = new Map();
+  for (const source of loadedSources) {
+    const matrix = parseAvailabilityMatrix(source.text);
+    if (!matrix) continue;
+    for (const row of matrix.rows) {
+      const name = displayCarName(row.car);
+      const key = normalizeCarName(name);
+      if (!cars.has(key)) cars.set(key, name);
+    }
+  }
+  return [...cars.values()];
+}
+
+function formatBlockedDays(days, ru) {
+  return days.map((day) => formatTripDate(day, ru)).join(", ");
+}
+
+async function directAvailabilityReply(latestMessage) {
+  const text = String(latestMessage || "");
+  const lower = text.toLowerCase();
+  if (!isAvailabilityQuestion(lower)) return "";
+
+  const range = parseDateRange(lower);
+  if (!range) return "";
+
+  const ru = isRussian(text);
+  const sources = (await buildAvailabilitySources()).filter((source) => (
+    !isPrivateSheet(source) && source.month !== null
+  ));
+  const { selected } = selectAvailabilitySources(sources, lower);
+  if (!selected.length) {
+    return ru
+      ? "Я вижу календарь, но для этих дат нет подключенного месяца. Напишите нам в WhatsApp/Telegram, и GoGoRent проверит вручную."
+      : "I can see the availability calendar, but the requested month is not connected. Message us on WhatsApp/Telegram and GoGoRent will check manually.";
+  }
+
+  const loaded = await loadAvailabilitySources(selected, lower);
+  const days = rentalDaysInRange(range);
+  const requestedCar = detectCar(lower);
+  const cars = requestedCar ? [requestedCar.name] : collectCarsFromLoadedSources(loaded.sources);
+  if (!cars.length) return "";
+
+  const results = cars.map((carName) => {
+    const blocked = [];
+    const unknown = [];
+    for (const day of days) {
+      const status = statusForDay(loaded.sources, carName, day);
+      if (!status.free) {
+        if (status.status === "unknown") unknown.push(day);
+        else blocked.push(day);
+      }
+    }
+    return {
+      name: displayCarName(carName),
+      rate: rateForCarName(carName),
+      available: blocked.length === 0 && unknown.length === 0,
+      blocked,
+      unknown
+    };
+  });
+
+  const start = formatTripDate(range.start, ru);
+  const end = formatTripDate(range.end, ru);
+  const available = results.filter((result) => result.available);
+  const unavailable = results.filter((result) => !result.available);
+
+  if (requestedCar) {
+    const result = results[0];
+    if (result.available) {
+      const total = result.rate ? ` ${ru ? "Примерно" : "Estimated"}: $${result.rate}/day x ${range.days} = $${result.rate * range.days}.` : "";
+      return ru
+        ? `${result.name} свободна с ${start} до ${end}.${total} Для финального подтверждения пришлите время получения, время возврата, точку доставки и имя.`
+        : `${result.name} is available from ${start} to ${end}.${total} Please send pickup time, return time, delivery point, and your full name to confirm.`;
+    }
+    const blockedText = result.blocked.length ? formatBlockedDays(result.blocked, ru) : formatBlockedDays(result.unknown, ru);
+    const alternatives = available.map((item) => `${item.name}${item.rate ? ` - $${item.rate}/day` : ""}`).join(", ");
+    return ru
+      ? `${result.name} не свободна с ${start} до ${end}. Занятые/неподтвержденные дни: ${blockedText}. ${alternatives ? `Свободные альтернативы: ${alternatives}. ` : ""}Пришлите время получения, возврата, точку доставки и имя, и мы подтвердим бронь.`
+      : `${result.name} is not available from ${start} to ${end}. Busy/unconfirmed days: ${blockedText}. ${alternatives ? `Available alternatives: ${alternatives}. ` : ""}Please send pickup time, return time, delivery point, and your full name to confirm.`;
+  }
+
+  const availableLines = available.map((item) => `- ${item.name}${item.rate ? ` - $${item.rate}/day` : ""}`);
+  const unavailableLines = unavailable.map((item) => {
+    const blockedText = item.blocked.length ? formatBlockedDays(item.blocked, ru) : formatBlockedDays(item.unknown, ru);
+    return `- ${item.name}: ${ru ? "занята" : "busy"} ${blockedText}`;
+  });
+
+  if (ru) {
+    return [
+      `С ${start} до ${end} свободны:`,
+      availableLines.length ? availableLines.join("\n") : "Нет свободных машин по подключенной шахматке.",
+      unavailableLines.length ? `\nНе свободны:\n${unavailableLines.join("\n")}` : "",
+      "\nДля финального подтверждения пришлите машину, время получения/возврата, точку доставки и имя."
+    ].filter(Boolean).join("\n");
+  }
+
+  return [
+    `Available from ${start} to ${end}:`,
+    availableLines.length ? availableLines.join("\n") : "No cars are free in the connected availability calendar.",
+    unavailableLines.length ? `\nNot available:\n${unavailableLines.join("\n")}` : "",
+    "\nPlease send the preferred car, pickup/return time, delivery point, and your full name to confirm."
+  ].filter(Boolean).join("\n");
+}
+
 function splitCsvLine(line) {
   const cells = [];
   let cell = "";
@@ -328,7 +869,7 @@ function isFreeStatus(value) {
   return status.includes("свобод") || status.includes("free");
 }
 
-function availabilitySummary(latest, csvText, availabilityMonth) {
+function availabilitySummary(latest, csvText, availabilityMonth, availabilityMonthIndex = null, availabilityYear = null) {
   const range = parseDateRange(latest);
   if (!range) return "";
 
@@ -353,11 +894,19 @@ function availabilitySummary(latest, csvText, availabilityMonth) {
     return { car: cells[0], cells };
   }).filter((row) => row.car);
 
-  const startDay = range.start.getDate();
-  const endDay = range.end.getDate();
   const daysToCheck = [];
-  for (let day = startDay; day < endDay; day += 1) {
+  const cursor = new Date(range.start);
+  while (cursor < range.end) {
+    if (
+      availabilityMonthIndex !== null
+      && (cursor.getMonth() !== availabilityMonthIndex || cursor.getFullYear() !== availabilityYear)
+    ) {
+      cursor.setDate(cursor.getDate() + 1);
+      continue;
+    }
+    const day = cursor.getDate();
     if (dayColumns.has(day)) daysToCheck.push(day);
+    cursor.setDate(cursor.getDate() + 1);
   }
   if (!daysToCheck.length) return "";
 
@@ -478,6 +1027,14 @@ export async function handler(event) {
 
   if (!latest) {
     return json(400, { error: "Message is required." });
+  }
+
+  const directAvailability = await directAvailabilityReply(latest);
+  if (directAvailability) {
+    return json(200, {
+      reply: directAvailability,
+      source: "availability_calendar"
+    });
   }
 
   const availability = await availabilityContext(latest);
