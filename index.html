@@ -50,7 +50,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
-html{overflow-x:clip;scroll-behavior:smooth;scrollbar-color:var(--surface-2) var(--bg)}
+html{overflow-x:clip;scroll-behavior:smooth;scrollbar-color:var(--surface-2) var(--bg);-webkit-tap-highlight-color:transparent} /* taps answer with the pressed scale, not a grey flash */
 body{overflow-x:clip;margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:var(--step-body);line-height:1.5;letter-spacing:0;font-kerning:normal;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;caret-color:var(--accent)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 ::selection{background:var(--accent);color:var(--accent-ink)}
@@ -84,7 +84,10 @@ h1,h2,h3{font-weight:800;letter-spacing:-.03em;line-height:1.04;text-wrap:balanc
 .logo{position:relative;display:inline-block;padding-top:9px;font-weight:900;font-size:25px;line-height:1;letter-spacing:-.02em;text-decoration:none;color:var(--ink);white-space:nowrap}
 .logo b{font-weight:inherit;color:var(--accent)}
 .logo-arc{position:absolute;top:1px;left:20px;width:74px;height:16px;border-top:1.5px solid currentColor;border-radius:70% 70% 0 0;transform:rotate(-4deg);opacity:.9}
-.bar-btn{min-height:40px;font-size:var(--step-small);padding:0 1em}
+.bar-btn{min-height:40px;font-size:var(--step-small);padding:0 1em;white-space:nowrap}
+/* narrow phones: the bar button shrinks to the WhatsApp mark and name instead of wrapping onto two lines */
+.bar-short,.bar-btn svg{display:none}
+@media (max-width:400px){.bar-long{display:none}.bar-short,.bar-btn svg{display:block}}
 
 /* ---------- language switch: a sliding orange thumb ---------- */
 .hero-top > .nav{margin-left:auto}
@@ -136,13 +139,16 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 @keyframes settle{from{transform:scale(1.08)}to{transform:scale(1)}}
 @media (max-width:760px){
   .hero-top .lang{margin-left:auto}
-  .hero{min-height:auto}
+  /* phones: the video takes the top of the first screen, the offer sits at the bottom over a scrim measured from the bottom edge */
+  .hero{min-height:100vh;min-height:100svh}
   .hero-bg{object-position:50% 50%}
-  .hero::before{background:linear-gradient(0deg,rgba(23,21,19,.96) 0%,rgba(23,21,19,.82) 45%,rgba(23,21,19,.45) 100%)} /* taste-skill-ignore: neutral scrim under text on a photo */
+  .hero::before{background:linear-gradient(180deg,rgba(23,21,19,.55) 0,rgba(23,21,19,0) 112px),linear-gradient(0deg,rgba(23,21,19,.95) 0,rgba(23,21,19,.88) var(--scrim-solid,360px),rgba(23,21,19,0) calc(var(--scrim-solid,360px) + 140px))} /* taste-skill-ignore: neutral scrim under text on a photo */
   .hero-in{padding-block:16px 28px}
   .nav{display:none}
-  .hero-main{padding-block:32px 8px}
+  .hero-main{align-self:end;padding-block:24px 8px}
+  .hero-main p{display:none} /* on a phone the four facts below already say it */
   .hero h1{font-size:clamp(1.75rem,7.6vw,3rem)}
+  html[lang="ka"] .hero h1{font-size:clamp(1.55rem,6.4vw,2.6rem)} /* the Georgian override above made phones bigger, not smaller */
   .hero-cta .btn{width:100%}
   .facts{grid-template-columns:1fr 1fr;row-gap:22px}
 }
@@ -194,10 +200,13 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   .fleet-grid{grid-template-columns:minmax(0,1fr)}
   .picker{grid-row:1;grid-template-columns:1fr 1fr;grid-auto-rows:auto}
   .picker li:last-child{grid-column:1/-1}
-  .pk{grid-template-columns:52px minmax(0,1fr);padding:8px 10px 8px 8px;gap:10px}
+  /* small screens: each tile keeps the name and the daily price; the kind is on the card below */
+  .pk{grid-template-columns:52px minmax(0,1fr);grid-template-areas:"th tx" "th pr";padding:8px 10px 8px 8px;column-gap:10px;row-gap:2px}
+  .pk-th{grid-area:th}
+  .pk-tx{grid-area:tx;align-self:end}
   .pk-tx b{font-size:var(--step-small)}
-  .pk-tx span{font-size:13px}
-  .pk-pr{display:none}
+  .pk-tx span{display:none}
+  .pk-pr{grid-area:pr;align-self:start;font-size:var(--step-small)}
   .st-top{flex-direction:column}
   .st-price{text-align:left}
   .st-cta .btn{width:100%}
@@ -246,7 +255,13 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 .steps-grid h3 b{color:var(--accent);font-weight:inherit}
 .steps-grid p{max-width:32ch}
 @media (hover:hover) and (pointer:fine){.steps-grid figure:hover img{transform:scale(1.04)}}
-@media (max-width:760px){.steps-grid{grid-template-columns:1fr;gap:48px}.steps-grid .ph{aspect-ratio:16/11}}
+@media (max-width:760px){
+  /* phones: one row per step, a small portrait beside the words, so the three steps fit on one screen */
+  .steps-grid{grid-template-columns:1fr;gap:24px}
+  .steps-grid figure{grid-template-columns:clamp(88px,26vw,128px) minmax(0,1fr);column-gap:16px;row-gap:6px}
+  .steps-grid .ph{grid-row:1/3}
+  .steps-grid h3{align-self:end}
+}
 
 /* ---------- prices + planner ---------- */
 .price{padding-block:var(--gap-section) 0}
@@ -314,6 +329,16 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 .copy:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 .flash{color:var(--paper-ink);opacity:0;transition:opacity 200ms ease}
 .flash.on{opacity:1}
+/* phones: the total and the send button ride along the bottom of the screen while the form is in view */
+.pl-dock{display:none}
+@media (max-width:860px){
+  .pl-dock{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-inline:calc(-1 * clamp(24px,3vw,48px));padding:12px clamp(24px,3vw,48px) calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -1px 0 var(--surface-2);transition:opacity 260ms var(--ease-out),transform 320ms var(--ease-out)}
+  .pl-dock.off{opacity:0;transform:translateY(12px);pointer-events:none}
+  .pl-dock-sum{display:grid;gap:4px;min-width:0}
+  .pl-dock-sum b{font-size:var(--step-lead);font-weight:800;letter-spacing:-.03em;line-height:1}
+  .pl-dock-sum span{font-size:var(--step-small);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl-dock .btn{flex:none}
+}
 @media (max-width:860px){
   .planner{grid-template-columns:minmax(0,1fr);margin-inline:calc(-1 * max(var(--m),env(safe-area-inset-left,0px)))}
   .pl-sticky{position:static}
@@ -412,6 +437,16 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 @media (max-width:760px){.f-cols{grid-template-columns:1fr 1fr;row-gap:32px}}
 @media (max-width:520px){.f-r{flex-wrap:wrap}.foot .f-r .btn{flex:1 1 auto}}
 
+/* ---------- touch screens ---------- */
+@media (hover:none),(pointer:coarse){
+  /* text links and checkboxes get a thumb-sized hit area; the negative margin keeps every line where it was */
+  .link,.copy{display:inline-block;padding-block:10px;margin-block:-10px}
+  .tick{min-height:44px}
+  /* route photos say they can be tapped */
+  .panel .pn::after{content:"\2192";margin-left:.35em}
+}
+@media (max-width:760px){:root{--gap-section:88px}}
+
 /* ---------- entrances (only for things below the fold at load) ---------- */
 .pre{opacity:0;transform:translateY(24px)}
 .rv{transition:opacity 700ms var(--ease-out),transform 900ms var(--ease-expo)}
@@ -434,7 +469,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 <div class="bar" id="bar" aria-hidden="true">
   <div class="bar-in wrap">
     <a class="logo" href="#top" tabindex="-1"><span class="logo-arc"></span><span>Go<b>Go</b>Rent</span></a>
-    <div class="bar-r"><div class="lang" role="group" aria-label="Language"><span class="lang-thumb" aria-hidden="true"></span><button type="button" tabindex="-1" data-lang="en" lang="en" aria-label="English">EN</button><button type="button" tabindex="-1" data-lang="ru" lang="ru" aria-label="Русский">RU</button><button type="button" tabindex="-1" data-lang="ka" lang="ka" aria-label="ქართული">ქა</button></div><a class="btn btn-accent bar-btn" href="https://wa.me/995500054521" target="_blank" rel="noopener" tabindex="-1"><span data-t="book">Book on WhatsApp</span></a></div>
+    <div class="bar-r"><div class="lang" role="group" aria-label="Language"><span class="lang-thumb" aria-hidden="true"></span><button type="button" tabindex="-1" data-lang="en" lang="en" aria-label="English">EN</button><button type="button" tabindex="-1" data-lang="ru" lang="ru" aria-label="Русский">RU</button><button type="button" tabindex="-1" data-lang="ka" lang="ka" aria-label="ქართული">ქა</button></div><a class="btn btn-accent bar-btn" href="https://wa.me/995500054521" target="_blank" rel="noopener" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.6-.3Z"/></svg><span class="bar-long" data-t="book">Book on WhatsApp</span><span class="bar-short">WhatsApp</span></a></div>
   </div>
 </div>
 <header class="hero" id="top">
@@ -455,7 +490,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       <p data-t="hero_p">Fully insured cars, delivered to the airport or your hotel, booked in one WhatsApp chat.</p>
       <div class="hero-cta">
         <a class="btn btn-accent" href="https://wa.me/995500054521?text=Hello%20GoGoRent%2C%20I%E2%80%99d%20like%20to%20rent%20a%20car." target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.6-.3Z"/></svg><span data-t="book">Book on WhatsApp</span></a>
-        <a class="link" href="https://wa.me/995500054521" target="_blank" rel="noopener">+995 500 05 45 21</a>
+        <a class="link" href="tel:+995500054521">+995 500 05 45 21</a>
       </div>
     </div>
     <ul class="facts">
@@ -563,6 +598,10 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
             <label class="tick"><input type="checkbox" id="x-driver" value="driver"><span data-t="x_driver">Private driver</span><em><span>+$80 </span><span data-t="aday">a day</span></em></label>
           </div>
         </fieldset>
+        <div class="pl-dock" id="plDock"><!-- phones only: follows the thumb while the form is on screen -->
+          <p class="pl-dock-sum" aria-hidden="true"><b class="tab" id="dockTotal">$180</b><span id="dockWhat">3 days, Mazda CX-5</span></p>
+          <a class="btn btn-accent" id="dockSend" href="https://wa.me/995500054521" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.6-.3Z"/></svg><span>WhatsApp</span></a>
+        </div>
       </form>
       <div class="pl-out">
         <div class="pl-sticky">
@@ -619,11 +658,11 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       <div class="c-top"><h2 class="c-say" id="c-h" data-t="c_h">Book in one message</h2><p class="c-sub" data-t="c_sub">Send your dates, route and car. We reply with the price and delivery.</p></div>
       <a class="c-num" id="cNum" href="https://wa.me/995500054521" target="_blank" rel="noopener" aria-label="WhatsApp +995 500 05 45 21"><span>+995 500 05 45 21</span></a>
       <div class="c-foot">
-        <p><span data-t="c_calls">WhatsApp and calls, Tbilisi.</span> <button class="copy" type="button" id="copyNum" data-t="copy_num">Copy number</button> <span class="flash" id="numFlash" data-t="copied">Copied</span></p>
+        <p><span data-t="c_calls">WhatsApp and calls, Tbilisi.</span> <a class="link" href="tel:+995500054521" data-t="call">Call</a> <button class="copy" type="button" id="copyNum" data-t="copy_num">Copy number</button> <span class="flash" id="numFlash" data-t="copied">Copied</span></p>
         <ul>
           <li><a class="link" href="https://t.me/gogorentt" target="_blank" rel="noopener">Telegram</a></li>
           <li><a class="link" href="https://instagram.com/gogorent.ge" target="_blank" rel="noopener">Instagram</a></li>
-          <li><span>gogorent.georgia@gmail.com</span></li>
+          <li><a class="link" href="mailto:gogorent.georgia@gmail.com">gogorent.georgia@gmail.com</a></li>
         </ul>
       </div>
     </div>
@@ -637,10 +676,10 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       <div class="f-r"><div class="lang" role="group" aria-label="Language"><span class="lang-thumb" aria-hidden="true"></span><button type="button" data-lang="en" lang="en" aria-label="English">EN</button><button type="button" data-lang="ru" lang="ru" aria-label="Русский">RU</button><button type="button" data-lang="ka" lang="ka" aria-label="ქართული">ქა</button></div><a class="btn btn-accent" href="https://wa.me/995500054521" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.6-.3Z"/></svg><span data-t="book">Book on WhatsApp</span></a></div>
     </div>
     <div class="f-cols">
-      <ul><li data-t="fb">Book</li><li><a class="link" href="https://wa.me/995500054521" target="_blank" rel="noopener">WhatsApp</a></li><li class="tab">+995 500 05 45 21</li><li><a class="link" href="https://t.me/gogorentt" target="_blank" rel="noopener">Telegram</a></li></ul>
+      <ul><li data-t="fb">Book</li><li><a class="link" href="https://wa.me/995500054521" target="_blank" rel="noopener">WhatsApp</a></li><li class="tab"><a class="link" href="tel:+995500054521">+995 500 05 45 21</a></li><li><a class="link" href="https://t.me/gogorentt" target="_blank" rel="noopener">Telegram</a></li></ul>
       <ul><li data-t="fp">Pickup</li><li data-t="fa">Tbilisi airport</li><li data-t="fh">Your hotel</li><li data-t="fg">A place we agree on</li></ul>
       <ul><li data-t="fc">Cars</li><li class="tab">Ford Fusion Hybrid, $45</li><li class="tab">Jeep Renegade 4x4, $45</li><li class="tab">Mazda CX-5, $60</li><li class="tab" data-t="f_cx9">Mazda CX-9, from $70</li></ul>
-      <ul><li data-t="ff">Follow</li><li><a class="link" href="https://instagram.com/gogorent.ge" target="_blank" rel="noopener">Instagram</a></li><li>gogorent.georgia@gmail.com</li><li><a class="link" href="#top" data-t="top">Back to the top</a></li></ul>
+      <ul><li data-t="ff">Follow</li><li><a class="link" href="https://instagram.com/gogorent.ge" target="_blank" rel="noopener">Instagram</a></li><li><a class="link" href="mailto:gogorent.georgia@gmail.com">gogorent.georgia@gmail.com</a></li><li><a class="link" href="#top" data-t="top">Back to the top</a></li></ul>
     </div>
     <div class="legal">
       <p data-t="copy">&copy; 2026 GoGoRent, Tbilisi, Georgia</p>
@@ -667,6 +706,12 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       new IntersectionObserver(function(es){es.forEach(function(e){ if(e.isIntersecting){ var pr = hv.play(); if(pr && pr.catch) pr.catch(function(){}); } else hv.pause(); })}).observe(hv);
     }
   }
+  /* phones: the solid part of the hero scrim is exactly as tall as the text, so the video above it stays clear in any language */
+  var heroMain = $('.hero-main');
+  function fitScrim(){ hero.style.setProperty('--scrim-solid', Math.round(hero.getBoundingClientRect().bottom - heroMain.getBoundingClientRect().top) + 'px'); }
+  if('ResizeObserver' in window){ var ro = new ResizeObserver(fitScrim); ro.observe(heroMain); ro.observe($('.facts')); }
+  fitScrim();
+
   var bar = $('#bar'), barOn = null;
   function barState(){
     var on = hero.getBoundingClientRect().bottom < 40;
@@ -712,7 +757,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       q0:'Можно арендовать машину без депозита?', a0:'Да, на выбранные машины. Точные условия подтверждаем до брони.',
       q1:'Полная страховка включена?', a1:'Да. Страховка входит в цену за день. Точное покрытие для вашей машины объясним до получения.',
       c_h:'Бронь одним сообщением', c_sub:'Пришлите даты, маршрут и машину. Ответим ценой и условиями доставки.',
-      c_calls:'WhatsApp и звонки, Тбилиси.', copy_num:'Скопировать номер',
+      c_calls:'WhatsApp и звонки, Тбилиси.', call:'Позвонить', copy_num:'Скопировать номер',
       fb:'Бронь', fp:'Где получить', fa:'Аэропорт Тбилиси', fh:'Ваш отель', fg:'Место по договорённости', fc:'Машины', ff:'Мы в сети',
       f_cx9:'Mazda CX-9, от $70', top:'Наверх', copy:'&copy; 2026 GoGoRent, Тбилиси, Грузия'
     },
@@ -749,7 +794,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       q0:'შეიძლება მანქანის დეპოზიტის გარეშე ქირაობა?', a0:'დიახ, შერჩეულ მანქანებზე. ზუსტ პირობებს დაჯავშნამდე გიდასტურებთ.',
       q1:'სრული დაზღვევა შედის ფასში?', a1:'დიახ. დაზღვევა დღიურ ფასშია. თქვენი მანქანის ზუსტ დაფარვას გადაცემამდე აგიხსნით.',
       c_h:'დაჯავშნა ერთი შეტყობინებით', c_sub:'გამოგვიგზავნეთ თარიღები, მარშრუტი და მანქანა. გიპასუხებთ ფასითა და მიწოდების პირობებით.',
-      c_calls:'WhatsApp და ზარები, თბილისი.', copy_num:'ნომრის კოპირება',
+      c_calls:'WhatsApp და ზარები, თბილისი.', call:'დარეკვა', copy_num:'ნომრის კოპირება',
       fb:'დაჯავშნა', fp:'მიღება', fa:'თბილისის აეროპორტი', fh:'თქვენი სასტუმრო', fg:'შეთანხმებული ადგილი', fc:'მანქანები', ff:'გამოგვყევით',
       f_cx9:'Mazda CX-9, $70-დან', top:'ზემოთ', copy:'&copy; 2026 GoGoRent, თბილისი, საქართველო'
     }
@@ -872,7 +917,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   /* WhatsApp links in the hero, bar and footer say hello in the chosen language */
   onLang.push(function(){
     $$('a[href^="https://wa.me/995500054521"]').forEach(function(a){
-      if(a.id === 'plSend' || a.id === 'stBook') return;
+      if(a.id === 'plSend' || a.id === 'stBook' || a.id === 'dockSend') return;
       if(a.classList.contains('btn')) a.href = 'https://wa.me/995500054521?text=' + encodeURIComponent(W().heroMsg);
     });
   });
@@ -957,14 +1002,14 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   }
   var shown = 0, animId = null;
   function tweenTo(v){
-    var el = $('#plTotal');
-    if(reduce){el.textContent = '$' + v.toLocaleString('en-US'); shown = v; return}
+    var el = $('#plTotal'), dock = $('#dockTotal');
+    if(reduce){el.textContent = dock.textContent = '$' + v.toLocaleString('en-US'); shown = v; return}
     var from = shown, t0 = performance.now(), d = 280;
     cancelAnimationFrame(animId);
     (function step(t){
       var k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 3);
       var cur = Math.round(from + (v - from) * e);
-      el.textContent = '$' + cur.toLocaleString('en-US');
+      el.textContent = dock.textContent = '$' + cur.toLocaleString('en-US');
       shown = cur; /* an interrupted count carries on from the number on screen */
       if(k < 1) animId = requestAnimationFrame(step);
     })(t0);
@@ -991,7 +1036,8 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       (extraIds.length ? '\n' + W().extrasW + extraIds.map(function(k){return EXTRA_T[LANG][k]}).join(', ') + '.' : '') +
       '\n' + W().dates + '\n' + W().pickup;
     $('#plMsg').textContent = msg;
-    $('#plSend').href = 'https://wa.me/995500054521?text=' + encodeURIComponent(msg);
+    $('#plSend').href = $('#dockSend').href = 'https://wa.me/995500054521?text=' + encodeURIComponent(msg);
+    setText($('#dockWhat'), d + ' ' + dayWord + ', ' + c.name);
     /* screen readers hear the final total once, not every frame of the count */
     if(liveOn) setText($('#plLive'), '$' + total.toLocaleString('en-US') + '. ' + $('#plWhat').textContent);
   }
@@ -1033,6 +1079,12 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   $('#copyMsg').addEventListener('click', function(){copy($('#plMsg').textContent, $('#copyFlash'))});
   $('#copyNum').addEventListener('click', function(){copy('+995500054521', $('#numFlash'))});
 
+  /* ---------- planner dock (phones): steps aside once the full summary is on screen ---------- */
+  if('IntersectionObserver' in window){
+    var dockEl = $('#plDock');
+    new IntersectionObserver(function(es){ dockEl.classList.toggle('off', es[0].isIntersecting); }).observe($('.pl-out'));
+  }
+
   /* ---------- faq: the answer opens and folds away at the same pace ---------- */
   if(!reduce){
     $$('.qs details').forEach(function(d){
@@ -1072,7 +1124,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
     $$('.band .panel').forEach(function(el,i){hideUntil(el, 'pre', i*90)});
     $$('.steps-grid figure').forEach(function(el,i){hideUntil(el, 'pre', i*100)});
     $$('.qs details').forEach(function(el,i){hideUntil(el, 'pre', i*60)});
-    $$('.pl-in > *').forEach(function(el,i){hideUntil(el, 'pre', i*60)});
+    $$('.pl-in > :not(.pl-dock)').forEach(function(el,i){hideUntil(el, 'pre', i*60)});
     var pb = $('.pblock');
     if(below(pb)){ pb.classList.add('wait'); items.push({el:pb, show:function(){pb.classList.remove('wait')}}); }
     var sp = $('#spread');
