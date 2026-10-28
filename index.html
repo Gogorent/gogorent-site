@@ -217,6 +217,32 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   .st-price{text-align:left}
   .st-cta .btn{width:100%}
 }
+@media (max-width:760px){
+  /* phones: the cars are one screen. The chosen car on top, every car in a strip below that swipes sideways;
+     the card that comes to rest in the middle is the chosen one (the script centres and reads it) */
+  .fleet{min-height:100vh;min-height:100svh;padding-block:calc(78px + env(safe-area-inset-top,0px)) 16px;scroll-margin-top:0}
+  .fleet .sec-sub{display:none}
+  .fleet-grid{margin-top:14px;gap:14px}
+  .st-ph{aspect-ratio:2/1}
+  .st-info{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px}
+  .st-top{flex-direction:row;gap:12px}
+  .st-top > div{flex:1;min-width:0} /* lets the one-line description end in an ellipsis instead of pushing the price out */
+  .st-name,.st-price b{font-size:clamp(1.5rem,6.6vw,1.9rem)}
+  .st-price{text-align:right}
+  .st-for{margin-top:4px;font-size:var(--step-small);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:none}
+  .st-specs{gap:6px}
+  .st-specs li{padding:6px 10px;font-size:13px}
+  #stPlan{display:none}
+  .picker{--card:160px;position:relative;grid-row:2;display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;margin-inline:calc(-1 * max(var(--m),env(safe-area-inset-left,0px)));padding:2px calc(50vw - var(--card) / 2) 4px}
+  .picker::-webkit-scrollbar{display:none}
+  .picker li,.picker li:last-child{flex:0 0 var(--card);scroll-snap-align:center}
+  .pk{grid-template-columns:minmax(0,1fr);grid-template-areas:"th" "tx" "pr";align-content:start;row-gap:6px;padding:6px 6px 10px}
+  .pk-th{aspect-ratio:2/1}
+  .pk-tx,.pk-pr{padding-inline:4px} /* 160px cards fit the longest name, "Jeep Renegade 4x4", whole */
+  .pk-tx b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* short phones: the one-line description gives way, and the specs keep one row (insurance is already on the first screen) */
+@media (max-width:760px) and (max-height:680px){.st-for,.st-specs li:nth-child(n+4){display:none}.st-specs{flex-wrap:nowrap;overflow:hidden}}
 
 /* ---------- routes band ---------- */
 .routes{padding-block:var(--gap-section) 0}
@@ -251,6 +277,46 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   .panel .ptake{display:none}
 }
 
+/* ---------- route guide: tap a route, a sheet slides in from the right ---------- */
+.tour{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:var(--ink);overflow:hidden}
+.tour::backdrop{background:transparent}
+.tour-scrim{position:absolute;inset:0;background:rgba(15,13,11,.62)}
+.tour-in{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);overflow-y:auto;overscroll-behavior:contain;background:var(--surface)}
+html.tour-open{overflow:hidden}
+.tour-x{all:unset;box-sizing:border-box;position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:2;width:44px;height:44px;background:rgba(23,21,19,.72);cursor:pointer;transition:transform 160ms var(--ease-out)}
+.tour-x span::before,.tour-x span::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:2px;background:var(--ink);transform:translate(-50%,-50%) rotate(45deg)}
+.tour-x span::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.tour-x:active{transform:scale(.94)}
+.tour-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tour-ph{aspect-ratio:16/10;overflow:hidden;background:var(--surface-2)}
+.tour-ph img{width:100%;height:100%;object-fit:cover}
+.tour-body{display:grid;gap:14px;padding:24px clamp(20px,4vw,36px) calc(32px + env(safe-area-inset-bottom,0px))}
+.tour-kick{font-size:var(--step-small);color:var(--muted)}
+.tour-name{font-size:var(--step-head);letter-spacing:-.035em}
+.tour-lead{line-height:1.45}
+.tour-facts{display:grid;grid-template-columns:1fr 1fr;gap:18px 20px;margin-block:8px}
+.tour-facts div{display:grid;gap:4px;align-content:start}
+.tour-facts div::before{content:"";width:24px;height:3px;margin-bottom:6px;background:var(--accent)}
+.tour-facts dt{font-size:13px;color:var(--muted)}
+.tour-facts dd{margin:0;font-size:var(--step-small);font-weight:700;line-height:1.35}
+.tour-h{margin-top:12px;font-size:var(--step-small);font-weight:600;color:var(--muted)}
+.tour-stops{display:grid;gap:14px;counter-reset:stop}
+.tour-stops li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 12px;counter-increment:stop}
+.tour-stops li::before{content:counter(stop);grid-row:1/3;display:grid;place-items:center;width:28px;height:28px;background:var(--surface-2);color:var(--accent);font-size:14px;font-weight:800}
+.tour-stops b{font-weight:700;line-height:1.3}
+.tour-stops span{font-size:var(--step-small);color:var(--muted);line-height:1.45}
+.tour-road{font-size:var(--step-small);line-height:1.5}
+.tour-tip{margin-top:6px;padding:14px 16px;border-left:3px solid var(--accent);background:var(--surface-2);font-size:var(--step-small);line-height:1.5}
+.tour-tip b{margin-right:6px;color:var(--accent)}
+.tour-cars{display:flex;flex-wrap:wrap;gap:8px}
+.tour-cars button{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;background:var(--surface-2);font-size:var(--step-small);font-weight:600;cursor:pointer;transition:background-color 180ms ease,transform 160ms var(--ease-out)}
+.tour-cars button span{color:var(--accent);font-variant-numeric:tabular-nums}
+.tour-cars button:active{transform:scale(.97)}
+.tour-cars button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){.tour-cars button:hover{background:#3a3631}}
+.tour-cta{display:grid;justify-items:start;gap:18px;margin-top:14px}
+.tour-cta .btn{width:100%}
+
 /* ---------- how it works: three steps ---------- */
 .steps{padding-block:var(--gap-section) 0}
 .steps-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,2.5vw,40px);margin-top:clamp(40px,5vw,72px)}
@@ -284,40 +350,59 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 }
 
 .planner{margin-top:clamp(72px,9vw,140px);display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:0;background:var(--surface)}
-.pl-in{padding:clamp(24px,3vw,48px);display:grid;grid-template-columns:minmax(0,1fr);gap:36px;align-content:start;min-width:0}
+.pl-in{padding:clamp(24px,3vw,48px);display:grid;grid-template-columns:minmax(0,1fr);gap:36px;align-content:start;min-width:0;counter-reset:plstep}
 .pl-in h3{font-size:var(--step-head)}
 .pl-group{display:grid;gap:14px}
-.pl-label{font-size:var(--step-small);color:var(--muted);font-weight:500}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{position:relative}
+/* the four questions are numbered steps */
+.pl-label{font-size:var(--step-small);color:var(--ink);font-weight:600;counter-increment:plstep}
+.pl-label::before{content:counter(plstep);display:inline-grid;place-items:center;width:24px;height:24px;margin-right:10px;background:var(--accent);color:var(--accent-ink);font-size:13px;font-weight:800;vertical-align:middle}
+/* routes: an even grid, never a ragged row; 5 across, 3 + 2 on narrower forms, 2 + 2 + 1 on phones */
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.chip{position:relative;display:grid}
 .chip input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.chip span{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;background:var(--surface-2);font-weight:500;font-size:var(--step-body);transition:background-color 180ms ease,color 180ms ease,transform 160ms var(--ease-out)}
+.chip span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;padding:8px 10px;line-height:1.25;background:var(--surface-2);font-weight:500;font-size:var(--step-body);transition:background-color 180ms ease,color 180ms ease,transform 160ms var(--ease-out)}
+@media (max-width:1180px){.chips{grid-template-columns:repeat(6,minmax(0,1fr))}.chip{grid-column:span 2}.chip:nth-child(n+4){grid-column:span 3}}
+@media (max-width:760px){.chips{grid-template-columns:1fr 1fr}.chip,.chip:nth-child(n+4){grid-column:auto}.chip:last-child{grid-column:1/-1}}
 .chip input:checked + span{background:var(--accent);color:var(--accent-ink)}
 .chip input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
 .chip:active span{transform:scale(.97)}
 @media (hover:hover) and (pointer:fine){.chip:hover input:not(:checked) + span{background:#3a3631}}
-.days{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+/* days: minus, the count, plus in one even row, the slider under it */
+.days{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;gap:8px;max-width:420px}
 .step{all:unset;box-sizing:border-box;display:grid;place-items:center;width:48px;height:48px;background:var(--surface-2);cursor:pointer;font-size:24px;line-height:1;transition:transform 160ms var(--ease-out),background-color 180ms ease}
 .step:active{transform:scale(.94)}
 .step:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (hover:hover) and (pointer:fine){.step:hover{background:#3a3631}}
-.days output{min-width:5ch;font-size:var(--step-body);font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.days input[type=range]{flex:1 1 160px;min-width:0;accent-color:var(--accent);height:28px}
-.cars-pick{display:grid;gap:2px}
-.carpick{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:baseline;padding:14px 16px;background:var(--surface-2);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,opacity 200ms ease}
+.days output{display:grid;place-items:center;min-height:48px;background:var(--surface-2);font-size:var(--step-body);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.days-range{width:100%;max-width:420px;margin:0;accent-color:var(--accent);height:28px}
+/* cars and extras: rows of one height, a photo on the left, the price on the right; the chosen one turns to paper */
+.cars-pick{display:grid;gap:8px;grid-auto-rows:1fr} /* every row as tall as the tallest */
+.carpick{position:relative;display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:14px;align-items:center;min-height:72px;padding:10px 16px 10px 10px;background:var(--surface-2);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,opacity 200ms ease}
 .carpick input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.carpick b{font-weight:600;font-size:var(--step-body);letter-spacing:-.015em}
-.carpick .why{grid-column:1/-1;font-size:var(--step-small);color:var(--muted);line-height:1.35;transition:color 180ms ease}
-.carpick .cp{font-variant-numeric:tabular-nums;font-size:var(--step-small)}
+.cp-th{aspect-ratio:3/2;overflow:hidden;background:var(--surface)}
+.cp-th img{width:100%;height:100%;object-fit:cover}
+.cp-tx{min-width:0}
+.cp-tx b{margin-right:8px;font-weight:600;font-size:var(--step-body);letter-spacing:-.015em}
+.best{display:inline-block;vertical-align:2px;padding:2px 8px;background:var(--accent);color:var(--accent-ink);font-style:normal;font-size:12px;font-weight:700}
+.best:empty{display:none}
+.carpick .why{display:block;margin-top:3px;font-size:var(--step-small);color:var(--muted);line-height:1.35;transition:color 180ms ease}
+.cp{display:grid;justify-items:end;gap:2px;text-align:right;white-space:nowrap}
+.cp b{font-weight:700;font-size:var(--step-body)}
+.cp span{font-size:12px;color:var(--muted);transition:color 180ms ease}
 .carpick:has(input:checked){background:var(--paper);color:var(--paper-ink)}
-.carpick:has(input:checked) .why{color:var(--paper-muted)}
+.carpick:has(input:checked) .why,.carpick:has(input:checked) .cp span{color:var(--paper-muted)}
 .carpick:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .carpick.off{opacity:.42;cursor:not-allowed}
 .carpick.off input{cursor:not-allowed}
-.extras{display:grid;gap:10px}
-.tick{display:flex;align-items:center;gap:12px;font-size:var(--step-body);cursor:pointer}
-.tick input{width:22px;height:22px;accent-color:var(--accent);margin:0;flex:none}
-.tick em{font-style:normal;color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+@media (hover:hover) and (pointer:fine){.carpick:not(.off):not(:has(input:checked)):hover,.tick:not(:has(input:checked)):hover{background:#3a3631}}
+@media (max-width:760px){.carpick{grid-template-columns:64px minmax(0,1fr) auto;gap:12px;padding-right:14px}}
+.extras{display:grid;gap:8px}
+.tick{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:14px;min-height:56px;padding:8px 16px;background:var(--surface-2);font-size:var(--step-body);cursor:pointer;transition:background-color 180ms ease,color 180ms ease}
+.tick input{width:22px;height:22px;accent-color:var(--accent);margin:0}
+.tick em{font-style:normal;color:var(--muted);font-size:var(--step-small);font-variant-numeric:tabular-nums;white-space:nowrap;transition:color 180ms ease}
+.tick:has(input:checked){background:var(--paper);color:var(--paper-ink)}
+.tick:has(input:checked) em{color:var(--paper-muted)}
+.tick:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 
 .pl-out{position:relative;padding:clamp(24px,3vw,48px);background:var(--paper);color:var(--paper-ink);display:flex;flex-direction:column;gap:20px}
 .pl-sticky{position:sticky;top:calc(88px + env(safe-area-inset-top,0px));display:grid;gap:20px} /* 64px logo bar + 24px air */
@@ -335,6 +420,14 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 .copy:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 .flash{color:var(--paper-ink);opacity:0;transition:opacity 200ms ease}
 .flash.on{opacity:1}
+/* the WhatsApp message folds under one line until asked for */
+.msgbox summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:10px;padding-block:6px;font-size:var(--step-small);font-weight:600;text-decoration:underline;text-underline-offset:.22em}
+.msgbox summary::-webkit-details-marker{display:none}
+.msgbox summary::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);transition:transform 240ms var(--ease-out)}
+.msgbox[open] summary::after{transform:translateY(2px) rotate(-135deg)}
+.msgbox summary:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.msgbox .msg,.msgbox .copyrow{margin-top:12px}
+.msgbox[open] .msg,.msgbox[open] .copyrow{animation:ans 320ms var(--ease-out)}
 /* phones: the total and the send button ride along the bottom of the screen while the form is in view */
 .pl-dock{display:none}
 @media (max-width:860px){
@@ -447,7 +540,6 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 @media (hover:none),(pointer:coarse){
   /* text links and checkboxes get a thumb-sized hit area; the negative margin keeps every line where it was */
   .link,.copy{display:inline-block;padding-block:10px;margin-block:-10px}
-  .tick{min-height:44px}
   /* route photos say they can be tapped */
   .panel .pn::after{content:"\2192";margin-left:.35em}
 }
@@ -514,7 +606,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
     <p class="sec-sub" data-t="cars_sub">Automatic cars, each one fully insured. Daily prices in US dollars; longer rentals are priced on request.</p>
     <div class="fleet-grid">
       <div class="stage" id="stage" role="tabpanel" aria-labelledby="tab-cx5" aria-live="polite">
-        <div class="st-ph"><img class="st-img" data-car="fusion" src="assets/img/fusion.jpg" width="1264" height="848" alt="White Ford Fusion Hybrid sedan" style="object-position:50% 60%" loading="lazy"><img class="st-img" data-car="jeep" src="assets/img/jeep.jpg" width="768" height="1376" alt="Black Jeep Renegade 4x4" style="object-position:50% 68%" loading="lazy"><img class="st-img on" data-car="cx5" src="assets/img/cx5.jpg" width="1264" height="848" alt="White Mazda CX-5" style="object-position:50% 60%"><img class="st-img" data-car="cx9a" src="assets/img/cx9a.jpg" width="1400" height="707" alt="Grey Mazda CX-9" style="object-position:50% 60%" loading="lazy"><img class="st-img" data-car="cx9b" src="assets/img/cx9b.jpg" width="1264" height="848" alt="Dark blue Mazda CX-9" style="object-position:50% 62%" loading="lazy"></div>
+        <div class="st-ph"><img class="st-img" data-car="fusion" src="assets/img/fusion.jpg" width="1264" height="848" alt="White Ford Fusion Hybrid sedan" style="object-position:50% 60%" loading="lazy"><img class="st-img" data-car="jeep" src="assets/img/jeep.jpg?v=2" width="1100" height="733" alt="Black Jeep Renegade 4x4" style="object-position:50% 50%" loading="lazy"><img class="st-img on" data-car="cx5" src="assets/img/cx5.jpg" width="1264" height="848" alt="White Mazda CX-5" style="object-position:50% 60%"><img class="st-img" data-car="cx9a" src="assets/img/cx9a.jpg" width="1400" height="707" alt="Grey Mazda CX-9" style="object-position:50% 60%" loading="lazy"><img class="st-img" data-car="cx9b" src="assets/img/cx9b.jpg" width="1264" height="848" alt="Dark blue Mazda CX-9" style="object-position:50% 62%" loading="lazy"></div>
         <div class="st-info">
           <div class="st-top">
             <div><h3 class="st-name" id="stName">Mazda CX-5</h3><p class="st-for" id="stFor">Kazbegi, Gudauri and long days on the road.</p></div>
@@ -527,7 +619,7 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
           </div>
         </div>
       </div>
-      <ul class="picker" role="tablist" aria-label="Choose a car" id="picker"><li><button class="pk" type="button" role="tab" id="tab-fusion" aria-selected="false" aria-controls="stage" data-car="fusion" tabindex="-1"><span class="pk-th"><img src="assets/img/th-fusion.jpg" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Ford Fusion Hybrid</b><span>Hybrid sedan</span></span><span class="pk-pr tab">$45</span></button></li><li><button class="pk" type="button" role="tab" id="tab-jeep" aria-selected="false" aria-controls="stage" data-car="jeep" tabindex="-1"><span class="pk-th"><img src="assets/img/th-jeep.jpg" alt="" loading="lazy" style="object-position:50% 68%"></span><span class="pk-tx"><b>Jeep Renegade 4x4</b><span>Compact SUV</span></span><span class="pk-pr tab">$45</span></button></li><li><button class="pk on" type="button" role="tab" id="tab-cx5" aria-selected="true" aria-controls="stage" data-car="cx5" tabindex="0"><span class="pk-th"><img src="assets/img/th-cx5.jpg" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Mazda CX-5</b><span>SUV</span></span><span class="pk-pr tab">$60</span></button></li><li><button class="pk" type="button" role="tab" id="tab-cx9a" aria-selected="false" aria-controls="stage" data-car="cx9a" tabindex="-1"><span class="pk-th"><img src="assets/img/th-cx9a.jpg" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Mazda CX-9</b><span>7-seat SUV</span></span><span class="pk-pr tab">$70</span></button></li><li><button class="pk" type="button" role="tab" id="tab-cx9b" aria-selected="false" aria-controls="stage" data-car="cx9b" tabindex="-1"><span class="pk-th"><img src="assets/img/th-cx9b.jpg" alt="" loading="lazy" style="object-position:50% 62%"></span><span class="pk-tx"><b>Mazda CX-9</b><span>7-seat SUV</span></span><span class="pk-pr tab">$75</span></button></li></ul>
+      <ul class="picker" role="tablist" aria-label="Choose a car" id="picker"><li><button class="pk" type="button" role="tab" id="tab-fusion" aria-selected="false" aria-controls="stage" data-car="fusion" tabindex="-1"><span class="pk-th"><img src="assets/img/th-fusion.jpg?v=2" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Ford Fusion Hybrid</b><span>Hybrid sedan</span></span><span class="pk-pr tab">$45</span></button></li><li><button class="pk" type="button" role="tab" id="tab-jeep" aria-selected="false" aria-controls="stage" data-car="jeep" tabindex="-1"><span class="pk-th"><img src="assets/img/th-jeep.jpg?v=2" alt="" loading="lazy" style="object-position:50% 50%"></span><span class="pk-tx"><b>Jeep Renegade 4x4</b><span>Compact SUV</span></span><span class="pk-pr tab">$45</span></button></li><li><button class="pk on" type="button" role="tab" id="tab-cx5" aria-selected="true" aria-controls="stage" data-car="cx5" tabindex="0"><span class="pk-th"><img src="assets/img/th-cx5.jpg?v=2" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Mazda CX-5</b><span>SUV</span></span><span class="pk-pr tab">$60</span></button></li><li><button class="pk" type="button" role="tab" id="tab-cx9a" aria-selected="false" aria-controls="stage" data-car="cx9a" tabindex="-1"><span class="pk-th"><img src="assets/img/th-cx9a.jpg?v=2" alt="" loading="lazy" style="object-position:50% 60%"></span><span class="pk-tx"><b>Mazda CX-9</b><span>7-seat SUV</span></span><span class="pk-pr tab">$70</span></button></li><li><button class="pk" type="button" role="tab" id="tab-cx9b" aria-selected="false" aria-controls="stage" data-car="cx9b" tabindex="-1"><span class="pk-th"><img src="assets/img/th-cx9b.jpg?v=2" alt="" loading="lazy" style="object-position:50% 62%"></span><span class="pk-tx"><b>Mazda CX-9</b><span>7-seat SUV</span></span><span class="pk-pr tab">$75</span></button></li></ul>
     </div>
   </section>
 
@@ -551,8 +643,34 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
         <span class="pcap"><span class="ptitle"><span data-t="gd_n" class="pn">Gudauri</span><span data-t="gd_d">Ski slopes, 2 hours north</span></span><span class="ptake"><span data-t="gd_t">Winter roads near the 2,379 m pass. Choose AWD or 4x4.</span></span></span>
       </a>
     </div>
-    <div class="wrap"><p class="band-cap" data-t="band_cap">Choose a route and the planner below shows which cars fit and what the trip costs.</p></div>
+    <div class="wrap"><p class="band-cap" data-t="band_cap">Open a route for a short guide: what to see, the road, the best season and the cars that fit.</p></div>
   </section>
+
+  <!-- route guide: filled by the script from TOURS when a route photo is opened -->
+  <dialog class="tour" id="tour" aria-labelledby="tourName">
+    <div class="tour-scrim" data-close></div>
+    <article class="tour-in" id="tourIn">
+      <button class="tour-x" type="button" data-close aria-label="Close"><span aria-hidden="true"></span></button>
+      <div class="tour-ph"><img id="tourImg" src="assets/img/kazbegi.jpg" alt=""></div>
+      <div class="tour-body">
+        <p class="tour-kick" id="tourKick"></p>
+        <h3 class="tour-name" id="tourName">Kazbegi</h3>
+        <p class="tour-lead" id="tourLead"></p>
+        <dl class="tour-facts" id="tourFacts"></dl>
+        <h4 class="tour-h" data-t="tour_see">What to see</h4>
+        <ol class="tour-stops" id="tourStops"></ol>
+        <h4 class="tour-h" data-t="tour_road">The road</h4>
+        <p class="tour-road" id="tourRoad"></p>
+        <p class="tour-tip"><b data-t="tour_tip">Tip</b><span id="tourTip"></span></p>
+        <h4 class="tour-h" data-t="tour_cars">Cars that fit</h4>
+        <ul class="tour-cars" id="tourCars"></ul>
+        <div class="tour-cta">
+          <a class="btn btn-accent" href="#plan" id="tourPlan" data-t="tour_plan">Plan this trip</a>
+          <a class="link" id="tourAsk" href="https://wa.me/995500054521" target="_blank" rel="noopener" data-t="tour_ask">Ask us about this route</a>
+        </div>
+      </div>
+    </article>
+  </dialog>
 
   <section class="steps wrap" aria-labelledby="how-h">
     <h2 class="sec-h" id="how-h" data-t="how_h">How booking works</h2>
@@ -584,13 +702,13 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
           </div>
         </fieldset>
         <div class="pl-group">
+          <label class="pl-label" for="days" data-t="days_l">Days</label>
           <div class="days">
-            <label class="pl-label" for="days" data-t="days_l">Days</label>
             <button class="step" type="button" id="dayMinus" aria-label="One day less">&minus;</button>
             <output id="daysOut" for="days" class="tab">3 days</output>
             <button class="step" type="button" id="dayPlus" aria-label="One day more">+</button>
-            <input type="range" id="days" name="days" min="1" max="30" value="3" aria-label="Days">
           </div>
+          <input class="days-range" type="range" id="days" name="days" min="1" max="30" value="3" aria-label="Days">
         </div>
         <fieldset class="pl-group">
           <legend class="pl-label" data-t="which">Which car?</legend>
@@ -620,8 +738,11 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Z"/></svg>
             <span data-t="send">Send on WhatsApp</span>
           </a>
-          <div class="msg" id="plMsg"></div>
-          <div class="copyrow"><button class="copy" type="button" id="copyMsg" data-t="copy_msg">Copy the message</button><span class="flash" id="copyFlash" data-t="copied">Copied</span></div>
+          <details class="msgbox">
+            <summary data-t="show_msg">See the message</summary>
+            <div class="msg" id="plMsg"></div>
+            <div class="copyrow"><button class="copy" type="button" id="copyMsg" data-t="copy_msg">Copy the message</button><span class="flash" id="copyFlash" data-t="copied">Copied</span></div>
+          </details>
         </div>
       </div>
     </div>
@@ -744,7 +865,9 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       tb_n:'Тбилиси', tb_d:'Город и аэропорт', tb_t:'Fusion Hybrid или Jeep с доставкой в аэропорт или к отелю.',
       kk_n:'Кахетия', kk_d:'Сигнахи, Телави, винодельни', kk_t:'Около 2 часов на восток. Для винного маршрута подойдёт и кроссовер, и седан.',
       gd_n:'Гудаури', gd_d:'Горнолыжный курорт, 2 часа на север', gd_t:'Зимние дороги у перевала 2379 м. Выбирайте полный привод.',
-      band_cap:'Выберите маршрут, и планировщик ниже покажет, какие машины подходят и сколько стоит поездка.',
+      band_cap:'Откройте маршрут: короткий гид — что посмотреть, какая дорога, лучший сезон и какие машины подходят.',
+      tour_see:'Что посмотреть', tour_road:'Дорога', tour_tip:'Совет', tour_cars:'Подходящие машины', tour_plan:'Спланировать эту поездку', tour_ask:'Спросить про этот маршрут',
+      show_msg:'Показать сообщение',
       how_h:'Как забронировать',
       s0h:'Напишите', s0p:'Отправьте в WhatsApp даты, маршрут и машину, которую хотите.',
       s1h:'Подтвердите', s1p:'Мы ответим: наличие, цена за день, что покрывает страховка и как доставим машину.',
@@ -781,7 +904,9 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       tb_n:'თბილისი', tb_d:'ქალაქი და აეროპორტი', tb_t:'Fusion Hybrid ან Jeep, მიწოდებით აეროპორტში ან სასტუმროსთან.',
       kk_n:'კახეთი', kk_d:'სიღნაღი, თელავი, მარნები', kk_t:'დაახლ. 2 საათი აღმოსავლეთით. ღვინის გზისთვის ჯიპიც და სედანიც გამოდგება.',
       gd_n:'გუდაური', gd_d:'სათხილამურო კურორტი, 2 საათი ჩრდილოეთით', gd_t:'ზამთრის გზები 2379 მ უღელტეხილთან. აირჩიეთ 4x4.',
-      band_cap:'აირჩიეთ მარშრუტი და ქვემოთ ნახავთ, რომელი მანქანა მოგერგებათ და რა ეღირება მოგზაურობა.',
+      band_cap:'გახსენით მარშრუტი: მოკლე გზამკვლევი — რა ვნახოთ, როგორი გზაა, საუკეთესო სეზონი და შესაფერისი მანქანები.',
+      tour_see:'რა ვნახოთ', tour_road:'გზა', tour_tip:'რჩევა', tour_cars:'შესაფერისი მანქანები', tour_plan:'ამ მოგზაურობის დაგეგმვა', tour_ask:'მოგვწერეთ ამ მარშრუტზე',
+      show_msg:'შეტყობინების ნახვა',
       how_h:'როგორ დავჯავშნოთ',
       s0h:'მოგვწერეთ', s0p:'გამოგვიგზავნეთ WhatsApp-ში თარიღები, მარშრუტი და სასურველი მანქანა.',
       s1h:'დაადასტურეთ', s1p:'გიპასუხებთ: ხელმისაწვდომობა, დღიური ფასი, რას ფარავს დაზღვევა და როგორ მოგაწვდით.',
@@ -820,21 +945,24 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 
   /* words the planner and the fleet build on the fly */
   var WORDS = {
-    en: { aday:'a day', perday:'/day', car:'car', off:'Choose AWD or 4x4 for this road', fit:'. A good fit for ',
+    en: { aday:'a day', perday:'/day', car:'car', off:'Choose AWD or 4x4 for this road', top:'Top pick', close:'Close',
+          askA:'Hello GoGoRent! I am planning a trip: ', askB:'. Which car would you suggest?',
           days:function(n){return n===1?'day':'days'},
           what:function(car,to,n,dw){return car+' '+to+' for '+n+' '+dw},
           note:'Insurance included. Deposit terms and the exact price are confirmed in WhatsApp before you book.',
           longnote:'For two weeks or more, ask for a long-term price; it is usually quoted separately. ',
           hello:'Hello GoGoRent! I would like to rent the ', for_:' for ', route:'Route: ', extrasW:'Extras: ', dates:'My dates: ', pickup:'Pickup: Tbilisi airport / hotel',
           heroMsg:'Hello GoGoRent, I would like to rent a car.' },
-    ru: { aday:'в день', perday:'/день', car:'машина', off:'Для этой дороги нужен полный привод', fit:'. Хорошо подходит: ',
+    ru: { aday:'в день', perday:'/день', car:'машина', off:'Для этой дороги нужен полный привод', top:'Лучший выбор', close:'Закрыть',
+          askA:'Здравствуйте, GoGoRent! Планирую поездку: ', askB:'. Какую машину посоветуете?',
           days:function(n){var a=n%10,b=n%100; return (a===1&&b!==11)?'день':(a>=2&&a<=4&&(b<12||b>14))?'дня':'дней'},
           what:function(car,to,n,dw){return car+', '+to+', '+n+' '+dw},
           note:'Страховка включена. Условия депозита и точную цену подтвердим в WhatsApp до брони.',
           longnote:'На две недели и больше спросите цену долгосрочной аренды. ',
           hello:'Здравствуйте, GoGoRent! Хочу арендовать ', for_:' на ', route:'Маршрут: ', extrasW:'Дополнительно: ', dates:'Мои даты: ', pickup:'Получение: аэропорт Тбилиси / отель',
           heroMsg:'Здравствуйте, GoGoRent! Хочу арендовать машину.' },
-    ka: { aday:'დღეში', perday:'/დღე', car:'მანქანა', off:'ამ გზისთვის საჭიროა 4x4', fit:'. კარგი არჩევანია: ',
+    ka: { aday:'დღეში', perday:'/დღე', car:'მანქანა', off:'ამ გზისთვის საჭიროა 4x4', top:'საუკეთესო არჩევანი', close:'დახურვა',
+          askA:'გამარჯობა, GoGoRent! ვგეგმავ მოგზაურობას: ', askB:'. რომელ მანქანას მირჩევთ?',
           days:function(){return 'დღე'},
           what:function(car,to,n,dw){return car+', '+to+', '+n+' '+dw},
           note:'დაზღვევა შედის. დეპოზიტის პირობებსა და ზუსტ ფასს WhatsApp-ში დაჯავშნამდე დაგიდასტურებთ.',
@@ -945,7 +1073,30 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
     $('#stBook').href = 'https://wa.me/995500054521?text=' + encodeURIComponent(W().hello + c.name + ' ($' + c.price + W().perday + ').\n' + W().dates);
     $('#stPlan').setAttribute('data-pick', id);
     if(!reduce){ var info = $('#stage .st-info'); info.classList.remove('swap'); void info.offsetWidth; info.classList.add('swap'); }
+    centerCar(id, stripReady);
   }
+  /* phones: the picker is a strip that swipes sideways; the chosen car is kept in the middle,
+     and the card that comes to rest in the middle becomes the chosen car */
+  var picker = $('#picker'), phone = window.matchMedia('(max-width:760px)'), stripReady = false, settleT = null;
+  var gliding = null; /* where the strip is gliding to after a tap; a pause on the way there must not choose another car */
+  function centerCar(id, smooth){
+    if(!phone.matches) return;
+    var li = $('#tab-' + id).parentNode, to = Math.max(0, Math.min(picker.scrollWidth - picker.clientWidth, li.offsetLeft + li.offsetWidth / 2 - picker.clientWidth / 2));
+    if(Math.abs(picker.scrollLeft - to) <= 1) return;
+    gliding = smooth && !reduce ? to : null;
+    picker.scrollTo({left:to, behavior: gliding !== null ? 'smooth' : 'instant'});
+  }
+  function settle(){
+    if(!phone.matches) return;
+    if(gliding !== null){ if(Math.abs(picker.scrollLeft - gliding) <= 2) gliding = null; return; }
+    var mid = picker.scrollLeft + picker.clientWidth / 2, best = null, gap = Infinity;
+    tabs.forEach(function(t){ var li = t.parentNode, d = Math.abs(li.offsetLeft + li.offsetWidth / 2 - mid); if(d < gap){ gap = d; best = t; } });
+    if(best && best.dataset.car !== curCar) showCar(best.dataset.car);
+  }
+  if('onscrollend' in picker) picker.addEventListener('scrollend', settle);
+  else picker.addEventListener('scroll', function(){ clearTimeout(settleT); settleT = setTimeout(settle, 140); }, {passive:true});
+  ['touchstart', 'pointerdown', 'wheel'].forEach(function(ev){ picker.addEventListener(ev, function(){ gliding = null; }, {passive:true}); }); /* a hand on the strip takes over */
+  if(phone.addEventListener) phone.addEventListener('change', function(){ centerCar(curCar, false); });
   tabs.forEach(function(t, i){
     t.addEventListener('click', function(){ showCar(t.dataset.car) });
     t.addEventListener('keydown', function(e){
@@ -956,7 +1107,65 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
     });
   });
   showCar('cx5');
+  stripReady = true;
   onLang.push(function(){ tabs.forEach(function(t){ var k = t.querySelector('.pk-tx span'); if(k) k.textContent = carText(t.dataset.car).kind; }); showCar(curCar); });
+
+  /* ---------- phones: the video and the cars are two whole screens; a swipe between them flicks like reels ---------- */
+  (function(){
+    if(reduce || !('ontouchstart' in window)) return;
+    var cars = $('#cars'), root = document.documentElement;
+    var x0 = 0, y0 = 0, s0 = 0, t0 = 0, active = false, vertical = false, anim = 0, gliding = false, lastY = window.scrollY, dir = 0, idle = null;
+    function carsTop(){ return cars.offsetTop; }
+    function glide(to){
+      cancelAnimationFrame(anim); gliding = true; root.style.scrollBehavior = 'auto';
+      var from = window.scrollY, start = performance.now(), d = 480;
+      (function step(now){
+        var k = Math.min(1, (now - start) / d), e = 1 - Math.pow(1 - k, 4);
+        window.scrollTo(0, from + (to - from) * e);
+        if(k < 1) anim = requestAnimationFrame(step); else { gliding = false; root.style.scrollBehavior = ''; }
+      })(start);
+    }
+    function onStart(e){
+      if(!phone.matches || e.touches.length > 1 || window.scrollY > carsTop() + 2) return; /* below the cars screen: normal scrolling */
+      var p = e.touches[0]; x0 = p.clientX; y0 = p.clientY; s0 = window.scrollY; t0 = performance.now();
+      active = true; vertical = false; cancelAnimationFrame(anim); gliding = false;
+    }
+    function onMove(e){
+      if(!active) return;
+      var p = e.touches[0], dx = p.clientX - x0, dy = y0 - p.clientY; /* dy > 0: the finger goes up, the page goes down */
+      if(!vertical){
+        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        /* sideways is the car strip; pulling down at the very top is the browser's refresh; going on past the cars is normal scrolling */
+        if(Math.abs(dx) > Math.abs(dy) || (s0 <= 0 && dy < 0) || (s0 >= carsTop() - 2 && dy > 0)){ active = false; return; }
+        vertical = true; root.style.scrollBehavior = 'auto';
+      }
+      e.preventDefault(); /* the page follows the finger, then finishes the step on release */
+      window.scrollTo(0, Math.max(0, Math.min(carsTop(), s0 + dy)));
+    }
+    function onEnd(){
+      if(!active) return; active = false;
+      if(!vertical) return;
+      var top = carsTop(), moved = window.scrollY - s0, v = moved / Math.max(1, performance.now() - t0);
+      var go = Math.abs(moved) > 70 || (Math.abs(moved) > 16 && Math.abs(v) > .35);
+      glide(go ? (moved > 0 ? top : 0) : (s0 < top / 2 ? 0 : top));
+    }
+    [hero, cars].forEach(function(el){
+      el.addEventListener('touchstart', onStart, {passive:true});
+      el.addEventListener('touchmove', onMove, {passive:false});
+      el.addEventListener('touchend', onEnd, {passive:true});
+      el.addEventListener('touchcancel', onEnd, {passive:true});
+    });
+    /* a scroll that comes to rest between the two screens (a fling up from further down) finishes the step */
+    window.addEventListener('scroll', function(){
+      var y = window.scrollY; if(y !== lastY){ dir = y > lastY ? 1 : -1; lastY = y; }
+      clearTimeout(idle);
+      if(gliding || active) return;
+      idle = setTimeout(function(){
+        var top = carsTop(), y = window.scrollY;
+        if(phone.matches && y > 2 && y < top - 2) glide(dir > 0 ? top : 0);
+      }, 160);
+    }, {passive:true});
+  })();
 
   /* ---------- the planner ---------- */
   var CARS = [
@@ -989,17 +1198,22 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       if(!row){
         var lab = document.createElement('label');
         lab.className = 'carpick';
-        lab.innerHTML = '<input type="radio" name="car" id="car-' + c.id + '" value="' + c.id + '"><b>' + c.name + '</b><span class="cp"></span><span class="why"></span>';
+        lab.innerHTML = '<input type="radio" name="car" id="car-' + c.id + '" value="' + c.id + '">' +
+          '<span class="cp-th"><img src="assets/img/th-' + c.id + '.jpg?v=2" alt="" loading="lazy"></span>' +
+          '<span class="cp-tx"><b>' + c.name + '</b><em class="best"></em><span class="why"></span></span>' +
+          '<span class="cp tab"><b></b><span></span></span>';
         carPick.appendChild(lab);
-        row = carRows[c.id] = {lab:lab, input:lab.querySelector('input'), cp:lab.querySelector('.cp'), why:lab.querySelector('.why')};
+        row = carRows[c.id] = {lab:lab, input:lab.querySelector('input'), best:lab.querySelector('.best'), why:lab.querySelector('.why'), price:lab.querySelector('.cp b'), per:lab.querySelector('.cp span')};
       }
       var off = r.mountain && !c.awd;
       var note = LANG !== 'en' ? CAR_T[LANG][c.id].note : c.note;
       row.lab.classList.toggle('off', off);
       row.input.disabled = off;
       row.input.checked = state.car === c.id;
-      setText(row.cp, '$' + c.price + ' ' + W().aday);
-      setText(row.why, off ? W().off : note + (r.best[0] === c.id ? W().fit + ROUTE_T[LANG][state.route][0] : ''));
+      setText(row.price, '$' + c.price);
+      setText(row.per, W().aday);
+      setText(row.best, r.best[0] === c.id ? W().top : ''); /* the route's first choice wears a badge */
+      setText(row.why, off ? W().off : note);
     });
   }
   function fixCar(){
@@ -1060,7 +1274,141 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   function setRoute(id){
     state.route = id; var inp = $('#r-' + id); if(inp) inp.checked = true; render();
   }
-  $$('[data-route]').forEach(function(a){a.addEventListener('click', function(){setRoute(a.getAttribute('data-route'))})});
+  /* ---------- route guide: open a route photo, a short guide slides in from the right ---------- */
+  var TOUR_IMG = {kazbegi:'assets/img/kazbegi.jpg', city:'assets/img/tbilisi.jpg', kakheti:'assets/img/kakheti.jpg', gudauri:'assets/img/jvari.jpg'};
+  var TOURS = {
+    en:{
+      kazbegi:{lead:'The classic trip from Tbilisi: up the Georgian Military Road to Stepantsminda, at the foot of Mount Kazbek.',
+        facts:[['Distance','About 155 km'],['Drive','About 3 hours each way'],['Best time','June to October'],['Stay','1 day, better 2']],
+        stops:[['Ananuri','A fortress with two churches above the turquoise Zhinvali reservoir, about an hour from Tbilisi.'],['Gudauri panorama','The mosaic monument over the Aragvi gorge, just before the pass.'],['Jvari pass, 2,379 m','The highest point of the road; snow can lie here from October to May.'],['Gergeti Trinity Church','The 14th-century church above Stepantsminda, with Kazbek behind it. About 1.5 hours on foot, or drive up the road.']],
+        road:'Paved all the way, with hairpins before the pass. After heavy snow the pass can close for hours or days, so check the road before you set off. Take an AWD or 4x4.',
+        tip:'Pack a warm layer: at the pass it is often around 10 °C colder than in Tbilisi.'},
+      city:{lead:'Pick the car up at the airport or your hotel: for the city, the old capital Mtskheta and short drives around Tbilisi.',
+        facts:[['Airport','About 18 km to the centre'],['Drive','25–30 minutes'],['Best time','All year; spring and autumn are mildest'],['Stay','1–3 days']],
+        stops:[['Old Tbilisi','Narrow streets, carved balconies and the sulphur baths of Abanotubani.'],['Narikala fortress','Above the old town; a cable car runs up from Rike Park.'],['Mtatsminda','The hill and park over the city, best at sunset.'],['Mtskheta','The old capital, 25 km north: Svetitskhoveli Cathedral and Jvari Monastery, both on the UNESCO list.']],
+        road:'Expect traffic at rush hour. The old town streets are narrow, steep and often one-way, so the hybrid or the compact Jeep is the easiest to park.',
+        tip:'Leave the car outside the old town and walk in.'},
+      kakheti:{lead:'Georgia’s wine country: vineyards under the Caucasus, the hill town of Sighnaghi and family cellars that make wine in clay qvevri.',
+        facts:[['Distance','About 110 km to Sighnaghi'],['Drive','About 2 hours'],['Best time','September and October, the harvest'],['Stay','1–2 days']],
+        stops:[['Sighnaghi','A walled hill town over the Alazani valley, with the mountains across it.'],['Bodbe Monastery','Two kilometres from Sighnaghi, where St Nino is buried.'],['Tsinandali','The Chavchavadze estate, with a park and an old wine cellar.'],['Alaverdi','An 11th-century cathedral among the vineyards near Telavi.']],
+        road:'Good paved roads. The way through Sagarejo is the easiest; the Gombori pass to Telavi is shorter but narrow and winding. Any of our cars suits it.',
+        tip:'Planning tastings? Add a private driver: the drink-driving limit in Georgia is very low.'},
+      gudauri:{lead:'Georgia’s largest ski resort, on the road to Kazbegi. In summer it is a base for paragliding and mountain walks.',
+        facts:[['Distance','About 120 km'],['Drive','About 2 hours'],['Ski season','December to April'],['Stay','A weekend or longer']],
+        stops:[['Ananuri','The fortress on the Zhinvali reservoir, on the way up.'],['Pasanauri','A village on the Aragvi known for its khinkali.'],['Gudauri panorama','The monument over the gorge, a short drive past the resort.'],['The slopes','Lifts start at about 2,200 m and reach over 3,000 m.']],
+        road:'The last part climbs in hairpins. After snowfall the police can require chains and the road may close for a while. Choose AWD or 4x4.',
+        tip:'Ask for a roof box or a ski rack when you book.'}
+    },
+    ru:{
+      kazbegi:{lead:'Классическая поездка из Тбилиси: по Военно-Грузинской дороге в Степанцминду, к подножию Казбека.',
+        facts:[['Расстояние','Около 155 км'],['В пути','Около 3 часов в одну сторону'],['Лучшее время','С июня по октябрь'],['Сколько дней','1 день, лучше 2']],
+        stops:[['Ананури','Крепость с двумя церквями над бирюзовым Жинвальским водохранилищем, около часа от Тбилиси.'],['Панорама Гудаури','Мозаичный монумент над Арагвским ущельем, перед перевалом.'],['Перевал Джвари, 2379 м','Самая высокая точка дороги; снег здесь возможен с октября по май.'],['Церковь Гергети','Храм XIV века над Степанцминдой на фоне Казбека. Около 1,5 часа пешком или наверх на машине.']],
+        road:'Асфальт на всём пути, перед перевалом серпантин. После сильного снегопада перевал могут закрыть на часы или дни, проверьте дорогу перед выездом. Нужен полный привод.',
+        tip:'Возьмите тёплую одежду: на перевале часто примерно на 10 °C холоднее, чем в Тбилиси.'},
+      city:{lead:'Заберите машину в аэропорту или у отеля: для города, древней столицы Мцхеты и коротких поездок вокруг Тбилиси.',
+        facts:[['Аэропорт','Около 18 км до центра'],['В пути','25–30 минут'],['Лучшее время','Круглый год; мягче всего весной и осенью'],['Сколько дней','1–3 дня']],
+        stops:[['Старый Тбилиси','Узкие улочки, резные балконы и серные бани Абанотубани.'],['Крепость Нарикала','Над старым городом; канатная дорога идёт из парка Рике.'],['Мтацминда','Гора и парк над городом, лучше всего на закате.'],['Мцхета','Древняя столица в 25 км к северу: собор Светицховели и монастырь Джвари, оба в списке ЮНЕСКО.']],
+        road:'В час пик в городе пробки. Улицы старого города узкие, крутые и часто с односторонним движением, поэтому проще всего парковать гибрид или компактный Jeep.',
+        tip:'Оставьте машину за пределами старого города и гуляйте пешком.'},
+      kakheti:{lead:'Винный край Грузии: виноградники под Кавказом, город на холме Сигнахи и семейные погреба, где вино делают в квеври.',
+        facts:[['Расстояние','Около 110 км до Сигнахи'],['В пути','Около 2 часов'],['Лучшее время','Сентябрь и октябрь, сбор урожая'],['Сколько дней','1–2 дня']],
+        stops:[['Сигнахи','Город-крепость на холме над Алазанской долиной, напротив гор.'],['Монастырь Бодбе','В 2 км от Сигнахи, место погребения святой Нино.'],['Цинандали','Усадьба Чавчавадзе с парком и старым винным погребом.'],['Алаверди','Собор XI века среди виноградников рядом с Телави.']],
+        road:'Хорошие асфальтированные дороги. Проще всего ехать через Сагареджо; дорога через Гомборский перевал к Телави короче, но узкая и извилистая. Подойдёт любая наша машина.',
+        tip:'Планируете дегустации? Возьмите водителя: допустимый уровень алкоголя за рулём в Грузии очень низкий.'},
+      gudauri:{lead:'Самый большой горнолыжный курорт Грузии, по дороге в Казбеги. Летом здесь летают на параплане и гуляют в горах.',
+        facts:[['Расстояние','Около 120 км'],['В пути','Около 2 часов'],['Лыжный сезон','С декабря по апрель'],['Сколько дней','Выходные или дольше']],
+        stops:[['Ананури','Крепость у Жинвальского водохранилища, по пути наверх.'],['Пасанаури','Село на Арагви, известное своими хинкали.'],['Панорама Гудаури','Монумент над ущельем, недалеко за курортом.'],['Склоны','Подъёмники начинаются примерно с 2200 м и поднимаются выше 3000 м.']],
+        road:'Последний участок — серпантин. После снегопада полиция может потребовать цепи, а дорогу могут на время закрыть. Выбирайте полный привод.',
+        tip:'При бронировании попросите бокс на крышу или крепление для лыж.'}
+    },
+    ka:{
+      kazbegi:{lead:'კლასიკური მოგზაურობა თბილისიდან: საქართველოს სამხედრო გზით სტეფანწმინდამდე, მყინვარწვერის ძირში.',
+        facts:[['მანძილი','დაახლ. 155 კმ'],['გზაში','დაახლ. 3 საათი ერთ მხარეს'],['საუკეთესო დრო','ივნისიდან ოქტომბრამდე'],['დღეები','1 დღე, უკეთესია 2']],
+        stops:[['ანანური','ციხე-სიმაგრე ორი ეკლესიით ფირუზისფერ ჟინვალის წყალსაცავთან, თბილისიდან დაახლ. ერთ საათში.'],['გუდაურის პანორამა','მოზაიკური მონუმენტი არაგვის ხეობის თავზე, უღელტეხილამდე.'],['ჯვრის უღელტეხილი, 2379 მ','გზის უმაღლესი წერტილი; თოვლი აქ შეიძლება ოქტომბრიდან მაისამდე იდოს.'],['გერგეტის სამება','XIV საუკუნის ტაძარი სტეფანწმინდის თავზე, მყინვარწვერის ფონზე. ფეხით დაახლ. 1,5 საათი, ან მანქანით გზაზე.']],
+        road:'მთელ გზაზე ასფალტია, უღელტეხილამდე სერპანტინია. ძლიერი თოვლის შემდეგ უღელტეხილი შეიძლება საათობით ან დღეობით დაიკეტოს, გასვლამდე გადაამოწმეთ გზა. საჭიროა 4x4.',
+        tip:'წაიღეთ თბილი ტანსაცმელი: უღელტეხილზე ხშირად დაახლ. 10 °C-ით უფრო ცივა, ვიდრე თბილისში.'},
+      city:{lead:'მიიღეთ მანქანა აეროპორტში ან სასტუმროსთან და იმოგზაურეთ ქალაქში, ძველ დედაქალაქ მცხეთაში და თბილისის შემოგარენში.',
+        facts:[['აეროპორტი','ცენტრამდე დაახლ. 18 კმ'],['გზაში','25–30 წუთი'],['საუკეთესო დრო','მთელი წელი; ყველაზე რბილი ამინდი გაზაფხულსა და შემოდგომაზეა'],['დღეები','1–3 დღე']],
+        stops:[['ძველი თბილისი','ვიწრო ქუჩები, ხის აივნები და აბანოთუბნის გოგირდის აბანოები.'],['ნარიყალა','ციხე ძველი ქალაქის თავზე; საბაგირო რიყის პარკიდან ადის.'],['მთაწმინდა','მთა და პარკი ქალაქის თავზე, საუკეთესოა მზის ჩასვლისას.'],['მცხეთა','ძველი დედაქალაქი, 25 კმ ჩრდილოეთით: სვეტიცხოველი და ჯვრის მონასტერი, ორივე იუნესკოს სიაშია.']],
+        road:'პიკის საათებში საცობებია. ძველი ქალაქის ქუჩები ვიწრო, ციცაბო და ხშირად ცალმხრივია, ამიტომ ყველაზე მარტივად ჰიბრიდი ან კომპაქტური Jeep პარკდება.',
+        tip:'მანქანა ძველი ქალაქის გარეთ დატოვეთ და ფეხით გაისეირნეთ.'},
+      kakheti:{lead:'საქართველოს ღვინის მხარე: ვენახები კავკასიონის ძირში, სიღნაღი და საოჯახო მარნები, სადაც ღვინოს ქვევრში აყენებენ.',
+        facts:[['მანძილი','სიღნაღამდე დაახლ. 110 კმ'],['გზაში','დაახლ. 2 საათი'],['საუკეთესო დრო','სექტემბერი და ოქტომბერი, რთველი'],['დღეები','1–2 დღე']],
+        stops:[['სიღნაღი','გალავნიანი ქალაქი ალაზნის ველის თავზე, კავკასიონის ხედით.'],['ბოდბის მონასტერი','სიღნაღიდან 2 კმ-ში, სადაც წმინდა ნინოა დაკრძალული.'],['წინანდალი','ჭავჭავაძეების მამული პარკითა და ძველი მარნით.'],['ალავერდი','XI საუკუნის ტაძარი ვენახებში, თელავთან ახლოს.']],
+        road:'კარგი ასფალტის გზები. ყველაზე მარტივი გზა საგარეჯოზე გადის; გომბორის უღელტეხილით თელავამდე უფრო მოკლეა, მაგრამ ვიწრო და მიხვეულ-მოხვეულია. ჩვენი ნებისმიერი მანქანა გამოდგება.',
+        tip:'გეგმავთ დეგუსტაციას? აიყვანეთ პირადი მძღოლი: საქართველოში საჭესთან ალკოჰოლის დასაშვები ზღვარი ძალიან დაბალია.'},
+      gudauri:{lead:'საქართველოს ყველაზე დიდი სათხილამურო კურორტი ყაზბეგის გზაზე. ზაფხულში აქ პარაპლანით ფრენენ და მთაში სეირნობენ.',
+        facts:[['მანძილი','დაახლ. 120 კმ'],['გზაში','დაახლ. 2 საათი'],['სეზონი','დეკემბრიდან აპრილამდე'],['დღეები','შაბათ-კვირა ან მეტი']],
+        stops:[['ანანური','ციხე ჟინვალის წყალსაცავთან, ასასვლელ გზაზე.'],['ფასანაური','სოფელი არაგვზე, ცნობილი თავისი ხინკლით.'],['გუდაურის პანორამა','მონუმენტი ხეობის თავზე, კურორტიდან ცოტა მოშორებით.'],['ფერდობები','საბაგიროები დაახლ. 2200 მ-დან იწყება და 3000 მ-ს სცდება.']],
+        road:'ბოლო მონაკვეთი სერპანტინია. თოვლის შემდეგ პოლიციამ შეიძლება ჯაჭვები მოითხოვოს, გზა კი დროებით დაიკეტოს. აირჩიეთ 4x4.',
+        tip:'დაჯავშნისას მოითხოვეთ სახურავის ბოქსი ან სათხილამურო სამაგრი.'}
+    }
+  };
+  var tour = $('#tour'), tourIn = $('#tourIn'), tourScrim = $('.tour-scrim', tour), tourRoute = 'kazbegi', tourClosing = false, closeAnim = null;
+  function fillTour(id){
+    var T = TOURS[LANG][id], panel = $('.panel[data-route="' + id + '"]'), img = $('#tourImg');
+    img.src = TOUR_IMG[id]; img.alt = $('img', panel).alt;
+    $('#tourName').textContent = textFor($('.pn', panel)); /* from the dictionary: the photo's own text may still be mid-swap */
+    $('#tourKick').textContent = textFor($('.ptitle > span:last-child', panel));
+    $('#tourLead').textContent = T.lead;
+    $('#tourFacts').innerHTML = T.facts.map(function(f){ return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
+    $('#tourStops').innerHTML = T.stops.map(function(s){ return '<li><b>' + s[0] + '</b><span>' + s[1] + '</span></li>'; }).join('');
+    $('#tourRoad').textContent = T.road;
+    $('#tourTip').textContent = T.tip;
+    $('#tourCars').innerHTML = ROUTES[id].best.map(function(cid){ var c = CARS.find(function(x){return x.id === cid}); return '<li><button type="button" data-car="' + cid + '">' + c.name + ' <span>$' + c.price + '</span></button></li>'; }).join('');
+    $('#tourAsk').href = 'https://wa.me/995500054521?text=' + encodeURIComponent(W().askA + ROUTE_T[LANG][id][0] + W().askB);
+    $('.tour-x', tour).setAttribute('aria-label', W().close);
+  }
+  function openTour(id){
+    if(!tour.showModal){ setRoute(id); location.hash = 'plan'; return; } /* very old browsers: straight to the planner */
+    if(closeAnim){ closeAnim.onfinish = null; closeAnim.cancel(); tourScrim.getAnimations().forEach(function(a){ a.cancel(); }); closeAnim = null; } /* reopened while leaving: stay */
+    tourRoute = id; tourClosing = false; fillTour(id);
+    if(!tour.open) tour.showModal();
+    document.documentElement.classList.add('tour-open'); tourIn.scrollTop = 0; tourIn.style.transform = '';
+    if(reduce) return;
+    tourIn.animate([{transform:'translateX(100%)'}, {transform:'none'}], {duration:560, easing:EASE_OUT});
+    tourScrim.animate([{opacity:0}, {opacity:1}], {duration:320, easing:'ease-out'});
+    $$('.tour-body > *', tour).forEach(function(el, i){ el.animate([{opacity:0, transform:'translateX(28px)'}, {opacity:1, transform:'none'}], {duration:560, delay:140 + Math.min(i, 12) * 30, easing:EASE_OUT, fill:'backwards'}); });
+  }
+  function closeTour(after){
+    if(!tour.open || tourClosing) return; tourClosing = true;
+    function done(){
+      closeAnim = null; tour.close(); document.documentElement.classList.remove('tour-open'); tourIn.style.transform = '';
+      tourIn.getAnimations().concat(tourScrim.getAnimations()).forEach(function(a){ a.cancel(); });
+      tourClosing = false; if(after) after();
+    }
+    if(reduce) return done();
+    var from = getComputedStyle(tourIn).transform; /* after a swipe it leaves from where the finger let go */
+    tourScrim.animate([{opacity:1}, {opacity:0}], {duration:300, easing:'ease-in', fill:'forwards'});
+    closeAnim = tourIn.animate([{transform: from === 'none' ? 'translateX(0)' : from}, {transform:'translateX(100%)'}], {duration:320, easing:'cubic-bezier(.4,0,1,1)', fill:'forwards'});
+    closeAnim.onfinish = done;
+  }
+  function goPlan(route, car){
+    setRoute(route); if(car){ state.car = car; render(); }
+    closeTour(function(){ $('#plan').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'}); });
+  }
+  $$('.band .panel').forEach(function(p){ p.addEventListener('click', function(e){ e.preventDefault(); openTour(p.dataset.route); }); });
+  tour.addEventListener('cancel', function(e){ e.preventDefault(); closeTour(); });
+  tour.addEventListener('click', function(e){ if(e.target.closest('[data-close]')) closeTour(); });
+  $('#tourCars').addEventListener('click', function(e){ var b = e.target.closest('button'); if(b) goPlan(tourRoute, b.dataset.car); });
+  $('#tourPlan').addEventListener('click', function(e){ e.preventDefault(); goPlan(tourRoute); });
+  onLang.push(function(){ if(tour.open) fillTour(tourRoute); });
+  /* a swipe to the right puts the guide away */
+  (function(){
+    var x0 = 0, y0 = 0, dx = 0, on = false, side = false;
+    tourIn.addEventListener('touchstart', function(e){ var p = e.touches[0]; x0 = p.clientX; y0 = p.clientY; dx = 0; on = true; side = false; }, {passive:true});
+    tourIn.addEventListener('touchmove', function(e){
+      if(!on) return; var p = e.touches[0], mx = p.clientX - x0, my = p.clientY - y0;
+      if(!side){ if(Math.abs(mx) < 10 && Math.abs(my) < 10) return; if(Math.abs(my) > Math.abs(mx) || mx < 0){ on = false; return; } side = true; }
+      dx = Math.max(0, mx); tourIn.style.transform = 'translateX(' + dx + 'px)';
+    }, {passive:true});
+    tourIn.addEventListener('touchend', function(){
+      if(!on) return; on = false; if(!side) return;
+      if(dx > 90) return closeTour();
+      var from = tourIn.style.transform; tourIn.style.transform = '';
+      if(!reduce) tourIn.animate([{transform:from}, {transform:'none'}], {duration:260, easing:EASE_OUT});
+    }, {passive:true});
+  })();
   $$('[data-pick]').forEach(function(a){a.addEventListener('click', function(){
     var id = a.getAttribute('data-pick'), c = CARS.find(function(x){return x.id===id});
     if(ROUTES[state.route].mountain && !c.awd) setRoute('city');
