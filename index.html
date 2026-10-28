@@ -139,10 +139,12 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
 @keyframes settle{from{transform:scale(1.08)}to{transform:scale(1)}}
 @media (max-width:760px){
   .hero-top .lang{margin-left:auto}
-  /* phones: the video takes the top of the first screen, the offer sits at the bottom over a scrim measured from the bottom edge */
+  /* phones: the video is a clear picture over the space above the text (--hero-text, set by the script), so the whole frame shows:
+     sky, peaks and the road. It is not darkened; its lower edge melts into the page under the headline through a mask,
+     which scales with the opening zoom, so no hard edge shows while it settles. Only a thin band keeps the logo readable. */
   .hero{min-height:100vh;min-height:100svh}
-  .hero-bg{object-position:50% 50%}
-  .hero::before{background:linear-gradient(180deg,rgba(23,21,19,.55) 0,rgba(23,21,19,0) 112px),linear-gradient(0deg,rgba(23,21,19,.95) 0,rgba(23,21,19,.88) var(--scrim-solid,360px),rgba(23,21,19,0) calc(var(--scrim-solid,360px) + 140px))} /* taste-skill-ignore: neutral scrim under text on a photo */
+  .hero-bg{bottom:auto;height:calc(100% - var(--hero-text,420px) + 64px);object-position:50% 50%;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 150px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 150px),transparent)}
+  .hero::before{bottom:auto;height:120px;background:linear-gradient(180deg,rgba(23,21,19,.55),rgba(23,21,19,0))} /* taste-skill-ignore: neutral band under the logo on a photo */
   .hero-in{padding-block:16px 28px}
   .nav{display:none}
   .hero-main{align-self:end;padding-block:24px 8px}
@@ -150,7 +152,11 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
   .hero h1{font-size:clamp(1.75rem,7.6vw,3rem)}
   html[lang="ka"] .hero h1{font-size:clamp(1.55rem,6.4vw,2.6rem)} /* the Georgian override above made phones bigger, not smaller */
   .hero-cta .btn{width:100%}
-  .facts{grid-template-columns:1fr 1fr;row-gap:22px}
+  /* the four facts a step smaller, so the labels stay on one line and the video gets the room */
+  .facts{grid-template-columns:1fr 1fr;gap:16px 20px;padding-top:20px}
+  .facts b{font-size:var(--step-small)}
+  .facts span{font-size:13px}
+  .facts li::before{margin-bottom:8px}
 }
 /* 320px phones: logo, gap and switch need 298px, more than fits; the hero logo takes the bar's size */
 @media (max-width:340px){
@@ -706,11 +712,11 @@ html[lang="ka"] .statement,html[lang="ka"] .big-q{font-size:clamp(2.2rem,1.2rem 
       new IntersectionObserver(function(es){es.forEach(function(e){ if(e.isIntersecting){ var pr = hv.play(); if(pr && pr.catch) pr.catch(function(){}); } else hv.pause(); })}).observe(hv);
     }
   }
-  /* phones: the solid part of the hero scrim is exactly as tall as the text, so the video above it stays clear in any language */
+  /* phones: --hero-text is how tall the text block is, so the video can fill exactly the space above it in any language */
   var heroMain = $('.hero-main');
-  function fitScrim(){ hero.style.setProperty('--scrim-solid', Math.round(hero.getBoundingClientRect().bottom - heroMain.getBoundingClientRect().top) + 'px'); }
-  if('ResizeObserver' in window){ var ro = new ResizeObserver(fitScrim); ro.observe(heroMain); ro.observe($('.facts')); }
-  fitScrim();
+  function fitHeroVideo(){ hero.style.setProperty('--hero-text', Math.round(hero.getBoundingClientRect().bottom - heroMain.getBoundingClientRect().top) + 'px'); }
+  if('ResizeObserver' in window){ var ro = new ResizeObserver(fitHeroVideo); ro.observe(heroMain); ro.observe($('.facts')); }
+  fitHeroVideo();
 
   var bar = $('#bar'), barOn = null;
   function barState(){
